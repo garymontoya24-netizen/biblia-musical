@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Biblia Musical</title>
+<meta name="description" content="Cuaderno de composición de la Biblia Musical">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Biblia Musical">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F3F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#13161C" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: cuaderno de compositor — mapa de los 66 libros → obras → números → hojas de pentagrama a mano alzada */
+:root{
+  --bg:#F3F5F2; --surface:#FFFFFF; --ink:#1E2230; --muted:#5D6371; --rule:#D8DCD5;
+  --accent:#24456B; --accent-soft:#E3EAF3; --gold:#9A7019; --danger:#9B2C2C;
+  --s0:#9AA0AA; --s1:#6E7FA0; --s2:#3F6596; --s3:#24456B; --s4:#7A5C9E; --s5:#A0712A; --s6:#9A7019; --s7:#3E7A55; --s8:#2E6B45;
+  --f-display:"Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --f-body:"Alegreya Sans", "Avenir Next", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#13161C; --surface:#1B1F27; --ink:#E6E8EC; --muted:#9AA1AE; --rule:#2D323C;
+  --accent:#93B3DD; --accent-soft:#22314A; --gold:#D6AE52; --danger:#E08080;
+  --s0:#6B7280; --s1:#7F90B0; --s2:#7FA3D3; --s3:#93B3DD; --s4:#B49AD6; --s5:#D4A15A; --s6:#D6AE52; --s7:#79C095; --s8:#5FB884;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13161C; --surface:#1B1F27; --ink:#E6E8EC; --muted:#9AA1AE; --rule:#2D323C;
+  --accent:#93B3DD; --accent-soft:#22314A; --gold:#D6AE52; --danger:#E08080;
+  --s0:#6B7280; --s1:#7F90B0; --s2:#7FA3D3; --s3:#93B3DD; --s4:#B49AD6; --s5:#D4A15A; --s6:#D6AE52; --s7:#79C095; --s8:#5FB884;
+  color-scheme:dark}
+html,body{height:100%}
+body{margin:0;touch-action:manipulation;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.5;-webkit-text-size-adjust:100%}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;text-wrap:balance;margin:0;line-height:1.15}
+.mono{font-family:var(--f-mono);font-size:.82em;font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:500}
+
+/* Top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--rule)}
+.top-in{max-width:1180px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand h1{font-size:1.65rem;letter-spacing:.01em}
+.brand .clef{font-family:var(--f-display);font-size:1.9rem;color:var(--gold);line-height:1}
+.tabs{display:flex;gap:4px;margin-left:auto}
+.tab{border:0;background:transparent;padding:10px 16px;border-radius:999px;font-weight:500;color:var(--muted);min-height:44px}
+.tab[aria-current="true"]{background:var(--accent-soft);color:var(--accent)}
+.banner{max-width:1180px;margin:10px auto 0;padding:0 20px}
+.banner p{margin:0;padding:10px 14px;border:1px dashed var(--rule);border-radius:var(--radius);font-size:.92rem;color:var(--muted)}
+
+main{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:24px 80px}
+.view-head{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.view-head h2{font-size:2.2rem}
+.view-head p{margin:4px 0 0;max-width:62ch;color:var(--muted)}
+.spacer{flex:1}
+
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--rule);background:var(--surface);border-radius:999px;padding:9px 16px;min-height:44px;font-weight:500}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.btn.danger.armed{background:var(--danger);border-color:var(--danger);color:var(--bg)}
+.btn:disabled{opacity:.5;cursor:default}
+.icon-btn{width:44px;height:44px;border-radius:999px;border:1px solid var(--rule);background:var(--surface);display:inline-grid;place-items:center;font-size:1rem}
+
+/* Mapa */
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 26px;font-size:.85rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--s0);flex:none}
+.testament{margin-bottom:34px}
+.testament > h3{font-size:1.5rem;margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+.section{display:grid;grid-template-columns:220px 1fr;gap:16px;padding:14px 0;border-bottom:1px solid var(--rule)}
+.section-info h4{margin:0;font-family:var(--f-display);font-size:1.25rem;font-weight:600}
+.section-info p{margin:4px 0 0;font-size:.85rem;color:var(--muted)}
+.books{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;min-width:0}
+.book{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--rule);background:var(--surface);border-radius:8px;padding:8px 12px;min-height:44px}
+.book .count{font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
+.book.has{border-color:var(--accent)}
+@media (max-width:700px){.section{grid-template-columns:1fr}}
+
+/* Drawer */
+.drawer-back{position:fixed;inset:0;background:rgba(10,12,18,.35);z-index:40}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:min(440px,100%);background:var(--surface);z-index:41;padding:calc(env(safe-area-inset-top,0px) + 22px) 22px 22px;overflow:auto;border-left:1px solid var(--rule);display:flex;flex-direction:column;gap:16px}
+.drawer h3{font-size:1.9rem}
+
+/* Obras */
+.obra-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.obra-card{text-align:left;border:1px solid var(--rule);background:var(--surface);border-radius:var(--radius);padding:16px 18px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.obra-card h3{font-size:1.45rem}
+.obra-card .meta{display:flex;gap:10px;flex-wrap:wrap;font-size:.88rem;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;font-weight:500;padding:3px 10px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.progress{display:grid;grid-template-columns:repeat(9,1fr);gap:3px}
+.progress i{height:4px;border-radius:2px;background:var(--rule)}
+.empty{border:1px dashed var(--rule);border-radius:var(--radius);padding:26px;color:var(--muted);text-align:center}
+.block-title{display:flex;align-items:center;gap:12px;margin:36px 0 14px}
+.block-title h3{font-size:1.5rem}
+
+/* Obra detail */
+.crumbs{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.title-input{font-family:var(--f-display);font-size:2.3rem;font-weight:600;border:0;background:transparent;width:100%;padding:2px 0;border-bottom:1px solid transparent}
+.title-input:focus{outline:none;border-bottom-color:var(--rule)}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px 16px;margin:14px 0}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select,.field textarea{border:1px solid var(--rule);background:var(--surface);border-radius:8px;padding:9px 11px;min-height:44px;width:100%}
+.field textarea{min-height:110px;resize:vertical;line-height:1.5}
+.field.wide{grid-column:1/-1}
+.stages{display:flex;flex-wrap:wrap;gap:6px}
+.stage{border:1px solid var(--rule);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.85rem;min-height:38px;color:var(--muted)}
+.stage[aria-pressed="true"]{color:var(--bg);border-color:transparent}
+
+.num-list{border-top:1px solid var(--rule)}
+.num{border-bottom:1px solid var(--rule)}
+.num-row{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;padding:12px 4px;width:100%;border:0;background:transparent;text-align:left;min-height:56px}
+.num-row .n{font-family:var(--f-mono);color:var(--gold);font-size:1rem}
+.num-row .t{display:flex;flex-direction:column;min-width:0}
+.num-row .t b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.num-row .t small{color:var(--muted);font-size:.85rem}
+.num-row .tags{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.num-body{padding:4px 4px 22px 64px}
+@media (max-width:700px){.num-body{padding-left:4px}}
+.row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+
+.sheets{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:10px}
+.sheet-card{border:1px solid var(--rule);background:var(--surface);border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:6px;text-align:left}
+.sheet-card .thumb{aspect-ratio:1/1.414;width:100%;max-width:100%;background:#FBFBF8;border-radius:4px;overflow:hidden;display:grid;place-items:center}
+.sheet-card .thumb img{width:100%;height:100%;object-fit:cover}
+.sheet-card span{font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sheet-new{border-style:dashed;background:transparent;color:var(--muted);display:grid;place-items:center;aspect-ratio:1/1.55;font-size:.9rem}
+
+/* Cuaderno */
+body.drawing{overflow:hidden}
+body.drawing .top, body.drawing main, body.drawing .banner{display:none}
+.studio{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);z-index:30;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--rule);background:var(--surface);overflow-x:auto;-webkit-overflow-scrolling:touch;flex:none}
+.toolbar .sep{width:1px;height:28px;background:var(--rule);flex:none}
+.toolbar .grp{display:flex;gap:4px;flex:none;align-items:center}
+.tool{min-width:44px;height:44px;border-radius:10px;border:1px solid transparent;background:transparent;display:inline-grid;place-items:center;padding:0 10px;font-size:.88rem;flex:none}
+.tool[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.swatch{width:30px;height:30px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--rule)}
+.tool[aria-pressed="true"] .swatch{box-shadow:0 0 0 2px var(--accent)}
+.sheet-title{border:0;background:transparent;font-family:var(--f-display);font-size:1.3rem;font-weight:600;min-width:140px;max-width:260px;padding:4px}
+.toolbar select{border:1px solid var(--rule);background:var(--surface);border-radius:8px;min-height:40px;padding:4px 8px}
+.status{font-size:.8rem;color:var(--muted);white-space:nowrap;min-width:92px;text-align:right}
+.wrap{flex:1;overflow:auto;position:relative;-webkit-overflow-scrolling:touch;background:var(--rule)}
+.page{position:relative;margin:18px auto;box-shadow:0 2px 14px rgba(0,0,0,.18);background:#FBFBF8;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.page canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:999px;font-size:.88rem;pointer-events:none;opacity:0;transition:opacity .3s}
+.hint.show{opacity:.92}
+@media (prefers-reduced-motion:reduce){.hint{transition:none}}
+.banner p button{margin-left:8px;border:0;background:transparent;color:var(--accent);font-weight:700;min-height:32px}
+.backup-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><span class="clef" aria-hidden="true">𝄞</span><h1>Biblia Musical</h1></div>
+    <nav class="tabs" aria-label="Secciones">
+      <button class="tab" id="tab-mapa" data-go="mapa">Mapa de la Biblia</button>
+      <button class="tab" id="tab-obras" data-go="obras">Obras y bocetos</button>
+      <button class="tab" id="tab-respaldo">Respaldo <span class="backup-dot" id="backup-dot" hidden></span></button>
+    </nav>
+  </div>
+</header>
+<div class="banner" id="banner" hidden><p><span id="banner-text"></span><button id="banner-x" aria-label="Cerrar aviso">Cerrar</button></p></div>
+<div class="banner" id="install" hidden><p>Para instalarla en el iPad: toca <b>Compartir</b> (el cuadrado con la flecha) → <b>Agregar a pantalla de inicio</b>. Instalada, funciona sin internet y el iPad no borra tus datos.<button id="install-x">Entendido</button></p></div>
+<div class="banner" id="update" hidden><p>Hay una versión nueva del cuaderno.<button id="update-go">Actualizar</button></p></div>
+<main id="main"><div class="empty">Abriendo tu cuaderno…</div></main>
+<div id="overlay"></div>
+
+<script>
+"use strict";
+/* ───────── Datos de referencia (fijos) ───────── */
+const SECCIONES = [
+  {id:"pent", t:"AT", n:"Pentateuco", forma:"Oratorio", modelo:"Handel, Israel en Egipto · Haydn, La Creación",
+    libros:["Génesis","Éxodo","Levítico","Números","Deuteronomio"]},
+  {id:"hist", t:"AT", n:"Libros históricos", forma:"Oratorio", modelo:"Handel, Josué · Saúl · Salomón · Ester",
+    libros:["Josué","Jueces","Rut","1 Samuel","2 Samuel","1 Reyes","2 Reyes","1 Crónicas","2 Crónicas","Esdras","Nehemías","Ester"]},
+  {id:"poet", t:"AT", n:"Poéticos y sapienciales", forma:"Salterio / cantata", modelo:"Salterio de Ginebra · Schütz, Psalmen Davids",
+    libros:["Job","Salmos","Proverbios","Eclesiastés","Cantares"]},
+  {id:"pmay", t:"AT", n:"Profetas mayores", forma:"Oratorio", modelo:"Handel, El Mesías (parte I) · Belsasar",
+    libros:["Isaías","Jeremías","Lamentaciones","Ezequiel","Daniel"]},
+  {id:"pmen", t:"AT", n:"Profetas menores", forma:"Cantata", modelo:"Mendelssohn, Elías (lenguaje profético)",
+    libros:["Oseas","Joel","Amós","Abdías","Jonás","Miqueas","Nahúm","Habacuc","Sofonías","Hageo","Zacarías","Malaquías"]},
+  {id:"evan", t:"NT", n:"Evangelios", forma:"Pasión / oratorio", modelo:"Bach, Pasión según San Mateo y San Juan · Schütz, Historias",
+    libros:["Mateo","Marcos","Lucas","Juan"]},
+  {id:"hech", t:"NT", n:"Hechos", forma:"Oratorio", modelo:"Mendelssohn, Paulus",
+    libros:["Hechos"]},
+  {id:"paul", t:"NT", n:"Epístolas paulinas", forma:"Cantata", modelo:"Bach, cantatas de iglesia",
+    libros:["Romanos","1 Corintios","2 Corintios","Gálatas","Efesios","Filipenses","Colosenses","1 Tesalonicenses","2 Tesalonicenses","1 Timoteo","2 Timoteo","Tito","Filemón"]},
+  {id:"gene", t:"NT", n:"Epístolas generales", forma:"Cantata / motete", modelo:"Bach, motetes · Brahms, Un réquiem alemán",
+    libros:["Hebreos","Santiago","1 Pedro","2 Pedro","1 Juan","2 Juan","3 Juan","Judas"]},
+  {id:"apoc", t:"NT", n:"Apocalipsis", forma:"Oratorio", modelo:"Franz Schmidt, El libro de los siete sellos",
+    libros:["Apocalipsis"]},
+];
+const LIBROS = SECCIONES.flatMap(s => s.libros);
+const FORMAS = ["Oratorio","Pasión","Cantata","Salterio","Motete","Coral / himno","Otra"];
+const ESTADOS = ["Idea","Estudio","Libreto","Bocetos","Composición","Orquestación","Revisión","Ensayo","Estrenada"];
+const TIPOS = ["Sinfonía","Coro","Recitativo","Arioso","Aria","Dúo","Coral","Turba","Fuga","Interludio","Otro"];
+const PAPELES = [
+  {id:"pent", n:"Pentagrama (12)"},
+  {id:"piano", n:"Piano (6 sistemas)"},
+  {id:"satb", n:"Coro SATB (3 sistemas)"},
+  {id:"orq", n:"Orquesta (18)"},
+  {id:"libre", n:"Libre (puntos)"},
+];
+const COLORES = [{c:"#1B1E2A",n:"Tinta"},{c:"#A12A2A",n:"Rojo"},{c:"#1F4E99",n:"Azul"},{c:"#2D7A4B",n:"Verde"}];
+const GROSORES = [{w:1.6,n:"Fino"},{w:2.8,n:"Medio"},{w:5,n:"Grueso"}];
+const W = 1000, H = 1414;
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const stageColor = i => `var(--s${Math.max(0,Math.min(8,i))})`;
+const ls = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k){ try { localStorage.removeItem(k); } catch {} },
+};
+
+/* ───────── Almacenamiento: IndexedDB en este iPad ───────── */
+const IDB = {
+  db: null, STORES: ["obras","numeros","hojas","trazos"],
+  open(){ return new Promise((res, rej) => {
+    const rq = indexedDB.open("biblia-musical", 1);
+    rq.onupgradeneeded = () => { for (const n of this.STORES) if (!rq.result.objectStoreNames.contains(n)) rq.result.createObjectStore(n); };
+    rq.onsuccess = () => { this.db = rq.result; res(); };
+    rq.onerror = () => rej(rq.error);
+  }); },
+  write(store, fn){ return new Promise((res, rej) => {
+    const t = this.db.transaction(store, "readwrite"); fn(t.objectStore(store));
+    t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error || new Error("abort"));
+  }); },
+  entries(store, range){ return new Promise((res, rej) => {
+    const out = [], c = this.db.transaction(store).objectStore(store).openCursor(range);
+    c.onsuccess = () => { const cur = c.result; if (cur) { out.push([cur.key, cur.value]); cur.continue(); } else res(out); };
+    c.onerror = () => rej(c.error);
+  }); },
+};
+const Store = {
+  mode: "pending", cache: {obras:new Map(), numeros:new Map(), hojas:new Map()}, watchers: {},
+  async init(){
+    try { await IDB.open(); this.mode = "idb";
+      for (const coll of Object.keys(this.cache)) for (const [k, v] of await IDB.entries(coll)) this.cache[coll].set(k, v);
+    } catch (e) { this.mode = "memory"; showBanner("Este navegador no permite guardar datos (¿navegación privada?). Lo que hagas ahora se perderá al cerrar."); }
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch {}
+  },
+  list(coll){ return [...this.cache[coll]].map(([id, v]) => Object.assign({id}, v)); },
+  notify(coll){ (this.watchers[coll] || []).forEach(f => f(this.list(coll))); },
+  watch(coll, cb){ (this.watchers[coll] = this.watchers[coll] || []).push(cb); cb(this.list(coll)); return () => {}; },
+  async put(coll, id, v){ if (this.mode === "idb") await IDB.write(coll, os => os.put(v, id)); },
+  async set(coll, id, data){ this.cache[coll].set(id, Object.assign({}, data)); this.notify(coll); await this.put(coll, id, this.cache[coll].get(id)); },
+  async update(coll, id, patch){ const cur = this.cache[coll].get(id); if (!cur) return; Object.assign(cur, patch); this.notify(coll); await this.put(coll, id, cur); },
+  async del(coll, id){ this.cache[coll].delete(id); this.notify(coll); if (this.mode === "idb") await IDB.write(coll, os => os.delete(id)); },
+  mem: new Map(),
+  async getChunks(hid){
+    if (this.mode !== "idb") return [...this.mem].filter(([k]) => k.startsWith(hid + ":")).map(([k, v]) => ({k:Number(k.split(":")[1]), s:v.s || []}));
+    const rows = await IDB.entries("trazos", IDBKeyRange.bound(hid + ":", hid + ":￿"));
+    return rows.map(([k, v]) => ({k:Number(String(k).split(":")[1]), s:v.s || []}));
+  },
+  async setChunk(hid, k, data){ if (this.mode !== "idb") { this.mem.set(hid + ":" + k, data); return; } await IDB.write("trazos", os => os.put(data, hid + ":" + k)); },
+  async delChunks(hid, n){ if (this.mode !== "idb") { for (let k = 0; k < n; k++) this.mem.delete(hid + ":" + k); return; }
+    await IDB.write("trazos", os => os.delete(IDBKeyRange.bound(hid + ":", hid + ":￿"))); },
+};
+
+/* ───────── Estado ───────── */
+const S = {
+  obras: [], numeros: [], hojas: [], loaded: {obras:false, numeros:false, hojas:false},
+  view: ls.get("bm:view", "mapa"), obraId: ls.get("bm:obra", null), openNum: null,
+};
+const byId = (arr, id) => arr.find(x => x.id === id);
+const numsOf = oid => S.numeros.filter(n => n.obraId === oid).sort((a,b) => (a.orden ?? 0) - (b.orden ?? 0));
+const hojasOf = (oid, nid) => S.hojas.filter(h => (h.obraId || null) === (oid || null) && (h.numeroId || null) === (nid || null)).sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
+
+const $main = document.getElementById("main");
+function showBanner(t){ document.getElementById("banner-text").textContent = t; document.getElementById("banner").hidden = false; }
+
+function go(view, opts = {}){
+  S.view = view; if (opts.obraId !== undefined) S.obraId = opts.obraId;
+  if (view === "obra" && opts.obraId !== undefined) S.openNum = null;
+  ls.set("bm:view", view); ls.set("bm:obra", S.obraId);
+  closeDrawer(); render(true); window.scrollTo(0, 0);
+}
+document.querySelectorAll("[data-go]").forEach(b => b.addEventListener("click", () => go(b.dataset.go)));
+
+/* Debounced writes per field */
+const pending = new Map();
+const creating = {obras:new Map(), numeros:new Map(), hojas:new Map()};
+async function createDoc(coll, id, data){ creating[coll].set(id, Object.assign({id}, data)); try { await Store.set(coll, id, data); } finally { creating[coll].delete(id); } }
+function queueUpdate(coll, id, patch, delay = 600){
+  const key = coll+"/"+id;
+  const cur = pending.get(key) || {patch:{}, t:0};
+  Object.assign(cur.patch, patch); clearTimeout(cur.t);
+  cur.t = setTimeout(() => { pending.delete(key); Store.update(coll, id, cur.patch).catch(e => showBanner("No se pudo guardar: " + (e.message || e.code))); }, delay);
+  pending.set(key, cur);
+  const arr = S[coll], item = byId(arr, id); if (item) Object.assign(item, patch);
+}
+
+/* ───────── Render ───────── */
+let lastSig = "";
+function render(force){
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-current", String(t.dataset.go === S.view || (S.view === "obra" && t.dataset.go === "obras"))));
+  if (Store.mode === "pending") return;
+  if (S.view === "obra" && !byId(S.obras, S.obraId) && S.loaded.obras) { S.view = "obras"; }
+  if (S.view === "mapa") return renderMapa();
+  if (S.view === "obras") return renderObras();
+  if (S.view === "obra") return renderObra(force);
+}
+
+function obraStage(o){ return Math.max(0, ESTADOS.indexOf(o.estado)); }
+function stagePill(e){ const i = Math.max(0, ESTADOS.indexOf(e)); return `<span class="pill" style="color:${stageColor(i)}"><span class="dot" style="background:${stageColor(i)}"></span>${esc(e || ESTADOS[0])}</span>`; }
+function progressBar(i){ return `<div class="progress" aria-label="Etapa ${i+1} de 9">${ESTADOS.map((_, k) => `<i style="${k <= i ? "background:"+stageColor(i) : ""}"></i>`).join("")}</div>`; }
+
+function renderMapa(){
+  const total = S.obras.length;
+  const libsCon = new Set(S.obras.map(o => o.libro)).size;
+  let h = `<div class="view-head"><div><div class="eyebrow">66 libros · ${libsCon} con obra en marcha · ${total} obra${total===1?"":"s"}</div><h2>Mapa de la Biblia</h2>
+    <p>Cada libro es una puerta. Toca uno para ver sus obras o comenzar una nueva. Al lado de cada grupo va la forma sugerida y los modelos para estudiar.</p></div></div>
+    <div class="legend">${ESTADOS.map((e,i) => `<span><span class="dot" style="background:${stageColor(i)}"></span>${e}</span>`).join("")}</div>`;
+  for (const t of ["AT","NT"]) {
+    h += `<section class="testament"><h3>${t === "AT" ? "Antiguo Testamento" : "Nuevo Testamento"}</h3>`;
+    for (const s of SECCIONES.filter(x => x.t === t)) {
+      h += `<div class="section"><div class="section-info"><h4>${s.n}</h4><p><b>${s.forma}</b><br>${s.modelo}</p></div><div class="books">`;
+      for (const l of s.libros) {
+        const os = S.obras.filter(o => o.libro === l);
+        const top = os.length ? Math.max(...os.map(obraStage)) : -1;
+        h += `<button class="book ${os.length ? "has" : ""}" data-libro="${esc(l)}">${top >= 0 ? `<span class="dot" style="background:${stageColor(top)}"></span>` : ""}${esc(l)}${os.length ? `<span class="count">${os.length}</span>` : ""}</button>`;
+      }
+      h += `</div></div>`;
+    }
+    h += `</section>`;
+  }
+  $main.innerHTML = h;
+  $main.querySelectorAll("[data-libro]").forEach(b => b.addEventListener("click", () => openBook(b.dataset.libro)));
+}
+
+function seccionDe(libro){ return SECCIONES.find(s => s.libros.includes(libro)); }
+function closeDrawer(){ document.getElementById("overlay").innerHTML = ""; }
+function openBook(libro){
+  const s = seccionDe(libro), os = S.obras.filter(o => o.libro === libro);
+  const ov = document.getElementById("overlay");
+  ov.innerHTML = `<div class="drawer-back" data-close></div><aside class="drawer" role="dialog" aria-label="${esc(libro)}">
+    <div style="display:flex;align-items:flex-start;gap:10px"><div style="flex:1"><div class="eyebrow">${esc(s.n)}</div><h3>${esc(libro)}</h3></div><button class="icon-btn" data-close aria-label="Cerrar">✕</button></div>
+    <p class="muted" style="margin:0">Forma sugerida: <b>${esc(s.forma)}</b>. Para estudiar: ${esc(s.modelo)}.</p>
+    ${os.length ? os.map(o => `<button class="obra-card" data-open="${o.id}"><h3>${esc(o.titulo)}</h3><div class="meta">${stagePill(o.estado)}<span>${esc(o.forma||"")}</span><span>${numsOf(o.id).length} números</span></div></button>`).join("") : `<div class="empty">Aún no hay obras sobre ${esc(libro)}.</div>`}
+    <button class="btn primary" data-new>Nueva obra sobre ${esc(libro)}</button></aside>`;
+  ov.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", closeDrawer));
+  ov.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => go("obra", {obraId:b.dataset.open})));
+  ov.querySelector("[data-new]").addEventListener("click", () => newObra(libro));
+}
+
+async function newObra(libro){
+  const s = seccionDe(libro) || SECCIONES[0];
+  const forma = FORMAS.find(f => s.forma.toLowerCase().startsWith(f.toLowerCase())) || "Oratorio";
+  const id = uid();
+  const o = {titulo: `${forma} sobre ${libro}`, libro, forma, estado:"Idea", referencia:"", duracion:"", plantilla:"", notas:"", createdAt: Date.now()};
+  S.obras.push(Object.assign({id}, o));
+  go("obra", {obraId:id});
+  try { await createDoc("obras", id, o); } catch (e) { showBanner("No se pudo crear la obra: " + (e.message || e.code)); }
+}
+
+function sheetGrid(oid, nid){
+  const hs = hojasOf(oid, nid);
+  return `<div class="sheets">${hs.map(hj => `<button class="sheet-card" data-sheet="${hj.id}"><div class="thumb">${hj.thumb ? `<img alt="" src="${esc(hj.thumb)}">` : `<span class="muted mono">${esc((PAPELES.find(p=>p.id===hj.papel)||PAPELES[0]).n)}</span>`}</div><span>${esc(hj.titulo || "Hoja")}</span></button>`).join("")}
+    <button class="sheet-card sheet-new" data-newsheet data-o="${oid||""}" data-n="${nid||""}">+ Nueva hoja</button></div>`;
+}
+function wireSheets(root){
+  root.querySelectorAll("[data-sheet]").forEach(b => b.addEventListener("click", () => openSheet(b.dataset.sheet)));
+  root.querySelectorAll("[data-newsheet]").forEach(b => b.addEventListener("click", () => newSheet(b.dataset.o || null, b.dataset.n || null)));
+}
+
+function renderObras(){
+  const os = S.obras.slice().sort((a,b) => LIBROS.indexOf(a.libro) - LIBROS.indexOf(b.libro) || (a.createdAt||0) - (b.createdAt||0));
+  let h = `<div class="view-head"><div><div class="eyebrow">En el orden del canon</div><h2>Obras y bocetos</h2><p>Cada obra se divide en números (coros, recitativos, arias, corales). Cada número tiene su texto, sus decisiones musicales y sus hojas dibujadas a mano.</p></div>
+    <div class="spacer"></div><button class="btn primary" id="new-obra">Nueva obra</button></div>`;
+  h += os.length ? `<div class="obra-list">${os.map(o => { const i = obraStage(o); const ns = numsOf(o.id); const nh = S.hojas.filter(x => x.obraId === o.id).length;
+      return `<button class="obra-card" data-open="${o.id}"><div class="eyebrow">${esc(o.libro)}${o.referencia ? " · " + esc(o.referencia) : ""}</div><h3>${esc(o.titulo)}</h3>
+      <div class="meta">${stagePill(o.estado)}<span>${esc(o.forma||"")}</span><span class="mono">${ns.length} núm · ${nh} hojas</span></div>${progressBar(i)}</button>`; }).join("")}</div>`
+    : `<div class="empty">Todavía no hay obras. Empieza desde el <b>Mapa</b> tocando un libro, o con <b>Nueva obra</b>.<br><br><button class="btn" id="load-example">Ver un ejemplo: oratorio sobre Rut</button></div>`;
+  h += `<div class="block-title"><h3>Ideas sueltas</h3><span class="muted">Motivos, temas y apuntes que aún no tienen obra.</span></div>${sheetGrid(null, null)}`;
+  $main.innerHTML = h;
+  $main.querySelectorAll("[data-open]").forEach(b => b.addEventListener("click", () => go("obra", {obraId:b.dataset.open})));
+  document.getElementById("new-obra").addEventListener("click", () => {
+    const ov = document.getElementById("overlay");
+    ov.innerHTML = `<div class="drawer-back" data-close></div><aside class="drawer" role="dialog" aria-label="Nueva obra"><div style="display:flex;gap:10px"><h3 style="flex:1">¿Sobre qué libro?</h3><button class="icon-btn" data-close aria-label="Cerrar">✕</button></div>
+      <div class="field"><label for="nb-libro">Libro</label><select id="nb-libro">${LIBROS.map(l => `<option>${esc(l)}</option>`).join("")}</select></div><button class="btn primary" id="nb-go">Crear obra</button></aside>`;
+    ov.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", closeDrawer));
+    document.getElementById("nb-go").addEventListener("click", () => newObra(document.getElementById("nb-libro").value));
+  });
+  wireSheets($main);
+  const ex = document.getElementById("load-example"); if (ex) ex.addEventListener("click", loadExample);
+}
+
+/* Obra detail: rebuild only when structure changes; otherwise patch values in place */
+function opt(list, v){ return list.map(x => `<option ${x === v ? "selected" : ""}>${esc(x)}</option>`).join(""); }
+function obraSig(o){ return [o.id, numsOf(o.id).map(n => n.id).join(","), S.hojas.filter(h => h.obraId === o.id).map(h => h.id + (h.thumb ? h.thumb.length : 0) + (h.titulo||"")).join(","), S.openNum].join("|"); }
+function patchValues(root, data){
+  root.querySelectorAll("[data-f]").forEach(el => {
+    if (el === document.activeElement) return;
+    const v = data[el.dataset.f] ?? ""; if (el.value !== String(v)) el.value = v;
+  });
+}
+function renderObra(force){
+  const o = byId(S.obras, S.obraId); if (!o) { $main.innerHTML = `<div class="empty">Cargando obra…</div>`; return; }
+  const sig = obraSig(o);
+  if (!force && sig === lastSig && $main.querySelector("#obra-form")) {
+    patchValues($main.querySelector("#obra-form"), o);
+    paintStages(o);
+    $main.querySelectorAll("[data-num]").forEach(el => { const n = byId(S.numeros, el.dataset.num); if (n) { patchValues(el, n); paintNumRow(el, n); } });
+    return;
+  }
+  lastSig = sig;
+  const ns = numsOf(o.id);
+  let h = `<div class="crumbs"><button class="btn ghost" data-go2="obras">← Obras</button><span class="muted">${esc(o.libro)}</span></div>
+    <div id="obra-form">
+    <input class="title-input" id="o-titulo" data-f="titulo" aria-label="Título de la obra" value="${esc(o.titulo)}">
+    <div class="stages" id="stages" role="group" aria-label="Etapa">${ESTADOS.map((e,i) => `<button class="stage" data-stage="${e}">${i+1}. ${e}</button>`).join("")}</div>
+    <div class="fields">
+      <div class="field"><label for="o-libro">Libro</label><select id="o-libro" data-f="libro">${opt(LIBROS, o.libro)}</select></div>
+      <div class="field"><label for="o-forma">Forma</label><select id="o-forma" data-f="forma">${opt(FORMAS, o.forma)}</select></div>
+      <div class="field"><label for="o-ref">Pasaje</label><input id="o-ref" data-f="referencia" placeholder="Rut 1–4" value="${esc(o.referencia)}"></div>
+      <div class="field"><label for="o-dur">Duración estimada</label><input id="o-dur" data-f="duracion" placeholder="ca. 75 min" value="${esc(o.duracion)}"></div>
+      <div class="field wide"><label for="o-pl">Plantilla</label><input id="o-pl" data-f="plantilla" placeholder="Solistas S A T B, coro SATB, 2 ob, fg, cuerdas, continuo" value="${esc(o.plantilla)}"></div>
+      <div class="field wide"><label for="o-notas">Concepto y notas</label><textarea id="o-notas" data-f="notas" placeholder="Arco dramático, tonalidades principales, leitmotivs, cómo apunta a Cristo…">${esc(o.notas)}</textarea></div>
+    </div></div>
+    <div class="block-title"><h3>Números</h3><span class="muted">${ns.length} en total</span><span class="spacer"></span><button class="btn" id="add-num">+ Número</button></div>
+    <div class="num-list">${ns.length ? ns.map((n, i) => numHTML(n, i, ns.length)).join("") : `<div class="empty" style="margin-top:12px">Divide la obra en números: sinfonía, recitativos, coros, arias, corales.</div>`}</div>
+    <div class="block-title"><h3>Bocetos generales</h3><span class="muted">Forma, plan tonal, temas de la obra entera.</span></div>
+    ${sheetGrid(o.id, null)}
+    <div class="block-title"><span class="spacer"></span><button class="btn danger" id="del-obra">Eliminar obra</button></div>`;
+  $main.innerHTML = h;
+  paintStages(o);
+  const form = $main.querySelector("#obra-form");
+  form.querySelectorAll("[data-f]").forEach(el => el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => queueUpdate("obras", o.id, {[el.dataset.f]: el.value}, el.tagName === "SELECT" ? 0 : 600)));
+  form.querySelectorAll("[data-stage]").forEach(b => b.addEventListener("click", () => { queueUpdate("obras", o.id, {estado:b.dataset.stage}, 0); paintStages(byId(S.obras, o.id)); }));
+  $main.querySelector("[data-go2]").addEventListener("click", () => go("obras"));
+  document.getElementById("add-num").addEventListener("click", () => addNumero(o.id));
+  armDelete(document.getElementById("del-obra"), "¿Eliminar obra, números y hojas?", () => deleteObra(o.id));
+  $main.querySelectorAll("[data-num]").forEach(el => wireNum(el));
+  wireSheets($main);
+}
+function paintStages(o){
+  const i = obraStage(o);
+  $main.querySelectorAll("#stages [data-stage]").forEach((b, k) => { const on = k === i; b.setAttribute("aria-pressed", String(on)); b.style.background = on ? stageColor(k) : ""; });
+}
+function numHTML(n, i, len){
+  const open = S.openNum === n.id;
+  return `<div class="num" data-num="${n.id}">
+    <button class="num-row" data-toggle aria-expanded="${open}"><span class="n">${i+1}</span>
+      <span class="t"><b data-show="titulo">${esc(n.titulo || "Sin título")}</b><small><span data-show="tipo">${esc(n.tipo)}</span> · <span data-show="referencia">${esc(n.referencia || "—")}</span> · <span data-show="voces">${esc(n.voces || "")}</span></small></span>
+      <span class="tags"><span class="mono muted" data-show="tonalidad">${esc(n.tonalidad || "")}</span><span data-pill>${stagePill(n.estado)}</span></span></button>
+    ${open ? `<div class="num-body">
+      <div class="fields">
+        <div class="field"><label>Tipo</label><select data-f="tipo">${opt(TIPOS, n.tipo)}</select></div>
+        <div class="field"><label>Título / incipit</label><input data-f="titulo" value="${esc(n.titulo)}"></div>
+        <div class="field"><label>Pasaje</label><input data-f="referencia" placeholder="Rut 1:16–17" value="${esc(n.referencia)}"></div>
+        <div class="field"><label>Voces / personaje</label><input data-f="voces" placeholder="Rut (soprano)" value="${esc(n.voces)}"></div>
+        <div class="field"><label>Tonalidad</label><input data-f="tonalidad" placeholder="mi menor" value="${esc(n.tonalidad)}"></div>
+        <div class="field"><label>Compás y tempo</label><input data-f="tempo" placeholder="3/4 · Andante" value="${esc(n.tempo)}"></div>
+        <div class="field"><label>Instrumentación</label><input data-f="instrumentos" placeholder="oboe obligado, cuerdas" value="${esc(n.instrumentos)}"></div>
+        <div class="field"><label>Etapa</label><select data-f="estado">${opt(ESTADOS, n.estado)}</select></div>
+        <div class="field wide"><label>Texto</label><textarea data-f="texto" placeholder="El texto bíblico o del libreto que se canta">${esc(n.texto)}</textarea></div>
+        <div class="field wide"><label>Ideas musicales</label><textarea data-f="notas" placeholder="Afecto, figura retórica, motivo, modelo a estudiar…">${esc(n.notas)}</textarea></div>
+      </div>
+      <div class="eyebrow">Hojas de este número</div>${sheetGrid(n.obraId, n.id)}
+      <div class="row-actions" style="margin-top:16px">
+        <button class="btn" data-move="-1" ${i === 0 ? "disabled" : ""}>↑ Subir</button><button class="btn" data-move="1" ${i === len-1 ? "disabled" : ""}>↓ Bajar</button>
+        <span class="spacer"></span><button class="btn danger" data-delnum>Eliminar número</button></div>
+    </div>` : ""}</div>`;
+}
+function paintNumRow(el, n){
+  el.querySelectorAll("[data-show]").forEach(s => { const f = s.dataset.show; s.textContent = n[f] || (f === "titulo" ? "Sin título" : f === "referencia" ? "—" : ""); });
+  const p = el.querySelector("[data-pill]"); if (p) p.innerHTML = stagePill(n.estado);
+}
+function wireNum(el){
+  const id = el.dataset.num;
+  el.querySelectorAll("[data-f]").forEach(f => { f.id = "n-" + id + "-" + f.dataset.f; const l = f.previousElementSibling; if (l && l.tagName === "LABEL") l.htmlFor = f.id; });
+  el.querySelector("[data-toggle]").addEventListener("click", () => { S.openNum = S.openNum === id ? null : id; render(true); });
+  el.querySelectorAll("[data-f]").forEach(f => f.addEventListener(f.tagName === "SELECT" ? "change" : "input", () => {
+    queueUpdate("numeros", id, {[f.dataset.f]: f.value}, f.tagName === "SELECT" ? 0 : 600); paintNumRow(el, byId(S.numeros, id));
+  }));
+  el.querySelectorAll("[data-move]").forEach(b => b.addEventListener("click", () => moveNum(id, Number(b.dataset.move))));
+  const d = el.querySelector("[data-delnum]"); if (d) armDelete(d, "¿Seguro? Eliminar", () => deleteNumero(id));
+}
+function armDelete(btn, armedText, fn){
+  const orig = btn.textContent; let t = 0;
+  btn.addEventListener("click", () => {
+    if (btn.classList.contains("armed")) { clearTimeout(t); fn(); return; }
+    btn.classList.add("armed"); btn.textContent = armedText;
+    t = setTimeout(() => { btn.classList.remove("armed"); btn.textContent = orig; }, 4000);
+  });
+}
+async function addNumero(oid){
+  const ns = numsOf(oid); const id = uid();
+  const n = {obraId:oid, orden:(ns.length ? (ns[ns.length-1].orden ?? ns.length) + 1 : 1), tipo:"Coro", titulo:"", referencia:"", voces:"", tonalidad:"", tempo:"", instrumentos:"", estado:"Idea", texto:"", notas:"", createdAt:Date.now()};
+  S.numeros.push(Object.assign({id}, n)); S.openNum = id; render(true);
+  try { await createDoc("numeros", id, n); } catch (e) { showBanner("No se pudo crear el número: " + (e.message || e.code)); }
+}
+async function moveNum(id, dir){
+  const n = byId(S.numeros, id); const ns = numsOf(n.obraId); const i = ns.findIndex(x => x.id === id); const j = i + dir;
+  if (j < 0 || j >= ns.length) return;
+  [ns[i], ns[j]] = [ns[j], ns[i]];
+  ns.forEach((x, k) => { if (x.orden !== k + 1) { x.orden = k + 1; Store.update("numeros", x.id, {orden:k+1}); } });
+  render(true);
+}
+async function deleteNumero(id){
+  const n = byId(S.numeros, id); if (!n) return;
+  const hs = S.hojas.filter(h => h.numeroId === id);
+  S.numeros = S.numeros.filter(x => x.id !== id); S.hojas = S.hojas.filter(h => h.numeroId !== id); render(true);
+  for (const h of hs) await deleteSheetData(h);
+  await Store.del("numeros", id);
+}
+async function deleteObra(oid){
+  const ns = numsOf(oid), hs = S.hojas.filter(h => h.obraId === oid);
+  S.obras = S.obras.filter(o => o.id !== oid); S.numeros = S.numeros.filter(n => n.obraId !== oid); S.hojas = S.hojas.filter(h => h.obraId !== oid);
+  go("obras");
+  for (const h of hs) await deleteSheetData(h);
+  for (const n of ns) await Store.del("numeros", n.id);
+  await Store.del("obras", oid);
+}
+async function deleteSheetData(h){ await Store.delChunks(h.id, h.chunks || 1); await Store.del("hojas", h.id); }
+
+/* ───────── Hojas: cuaderno de dibujo ───────── */
+async function newSheet(oid, nid, papel){
+  const id = uid(); const count = hojasOf(oid, nid).length;
+  const n = nid ? byId(S.numeros, nid) : null;
+  const h = {obraId:oid || null, numeroId:nid || null, titulo:`Hoja ${count + 1}`, papel: papel || (n && n.tipo === "Coro" ? "satb" : "pent"), chunks:1, thumb:"", createdAt:Date.now(), updatedAt:Date.now()};
+  S.hojas.push(Object.assign({id}, h));
+  try { await createDoc("hojas", id, h); } catch (e) { showBanner("No se pudo crear la hoja: " + (e.message || e.code)); return; }
+  openSheet(id);
+}
+
+const D = { sheet:null, strokes:[], nChunks:1, dirty:new Set(), undo:[], redo:[], tool:"pen", color:COLORES[0].c, width:GROSORES[0].w,
+  penOnly: ls.get("bm:penOnly", false), zoom: 1, saving:false, saveT:0, el:null };
+
+function drawPaper(ctx, papel){
+  ctx.fillStyle = "#FBFBF8"; ctx.fillRect(0, 0, W, H);
+  const line = (y, x0 = 70, x1 = W - 60) => { ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); };
+  const staff = (y, gap) => { for (let k = 0; k < 5; k++) line(y + k * gap); };
+  ctx.strokeStyle = "#8C929C"; ctx.lineWidth = 1;
+  if (papel === "libre") {
+    ctx.fillStyle = "#C9CDD3";
+    for (let y = 60; y < H - 40; y += 30) for (let x = 60; x < W - 40; x += 30) { ctx.beginPath(); ctx.arc(x, y, 1.3, 0, 6.3); ctx.fill(); }
+    return;
+  }
+  if (papel === "pent") { const gap = 9, top = 110, step = (H - 160 - top) / 11; for (let i = 0; i < 12; i++) staff(top + i * step, gap); }
+  if (papel === "orq") { const gap = 6.4, top = 80, step = (H - 120 - top) / 17; for (let i = 0; i < 18; i++) staff(top + i * step, gap);
+    ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(70, top); ctx.lineTo(70, top + 17 * step + 4 * gap); ctx.stroke(); }
+  if (papel === "piano" || papel === "satb") {
+    const per = papel === "piano" ? 2 : 4, systems = papel === "piano" ? 6 : 3, gap = 9;
+    const inner = papel === "piano" ? 80 : 74, top = 110;
+    const sysH = (per - 1) * inner + 4 * gap; const step = (H - 140 - top - sysH) / (systems - 1);
+    for (let s = 0; s < systems; s++) {
+      const y0 = top + s * step;
+      for (let k = 0; k < per; k++) staff(y0 + k * inner, gap);
+      ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(70, y0); ctx.lineTo(70, y0 + sysH); ctx.stroke(); ctx.lineWidth = 1;
+      if (papel === "satb") { ctx.fillStyle = "#8C929C"; ctx.font = "15px Georgia, serif"; ["S","A","T","B"].forEach((v, k) => ctx.fillText(v, 44, y0 + k * inner + 2.6 * gap)); }
+    }
+  }
+}
+function drawStroke(ctx, s){
+  const p = s.p; if (p.length < 3) return;
+  ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = s.c;
+  if (s.t === "hl") {
+    ctx.save(); ctx.globalAlpha = 0.28; ctx.lineWidth = s.w * 5; ctx.beginPath(); ctx.moveTo(p[0]/2, p[1]/2);
+    for (let k = 3; k < p.length; k += 3) ctx.lineTo(p[k]/2, p[k+1]/2);
+    if (p.length === 3) ctx.lineTo(p[0]/2 + .1, p[1]/2);
+    ctx.stroke(); ctx.restore(); return;
+  }
+  const n = p.length / 3, wOf = q => s.w * (0.35 + 0.9 * (q / 100));
+  if (n === 1) { ctx.fillStyle = s.c; ctx.beginPath(); ctx.arc(p[0]/2, p[1]/2, wOf(p[2]) / 2, 0, 6.3); ctx.fill(); return; }
+  let mx = p[0]/2, my = p[1]/2;
+  for (let i = 1; i < n; i++) {
+    const x = p[i*3]/2, y = p[i*3+1]/2;
+    const nx = i < n - 1 ? (x + p[(i+1)*3]/2) / 2 : x, ny = i < n - 1 ? (y + p[(i+1)*3+1]/2) / 2 : y;
+    ctx.lineWidth = wOf(p[i*3+2]); ctx.beginPath(); ctx.moveTo(mx, my); ctx.quadraticCurveTo(x, y, nx, ny); ctx.stroke();
+    mx = nx; my = ny;
+  }
+}
+function encStroke(s){ const d = []; let a = 0, b = 0, c = 0; for (let k = 0; k < s.p.length; k += 3) { d.push(s.p[k]-a, s.p[k+1]-b, s.p[k+2]-c); a = s.p[k]; b = s.p[k+1]; c = s.p[k+2]; } return {i:s.i, t:s.t, c:s.c, w:s.w, d}; }
+function decStroke(o, ch){ const p = []; let a = 0, b = 0, c = 0; const d = o.d || []; for (let k = 0; k < d.length; k += 3) { a += d[k]; b += d[k+1]; c += d[k+2]; p.push(a, b, c); } return {i:o.i, t:o.t, c:o.c, w:o.w, p, ch}; }
+
+async function openSheet(id){
+  const h = byId(S.hojas, id); if (!h) return;
+  D.sheet = h; D.strokes = []; D.undo = []; D.redo = []; D.dirty = new Set(); D.nChunks = h.chunks || 1;
+  document.body.classList.add("drawing"); buildStudio(h); setStatus("Cargando…");
+  try {
+    const chunks = (await Store.getChunks(id)).sort((a, b) => a.k - b.k);
+    for (const c of chunks) { for (const o of c.s) D.strokes.push(decStroke(o, c.k)); D.nChunks = Math.max(D.nChunks, c.k + 1); }
+    setStatus("Guardado");
+  } catch (e) { setStatus("No se pudo cargar"); showBanner("No se pudo cargar la hoja: " + (e.message || e.code)); }
+  layout(); redrawInk();
+}
+
+function buildStudio(h){
+  const el = document.createElement("div"); el.className = "studio"; D.el = el;
+  const parent = h.numeroId ? byId(S.numeros, h.numeroId) : null, obra = h.obraId ? byId(S.obras, h.obraId) : null;
+  el.innerHTML = `<div class="toolbar" role="toolbar" aria-label="Herramientas">
+      <button class="tool" data-a="back" aria-label="Volver">← ${esc(obra ? "Obra" : "Obras")}</button>
+      <input class="sheet-title" id="st-title" value="${esc(h.titulo)}" aria-label="Nombre de la hoja">
+      <span class="muted" style="font-size:.85rem;white-space:nowrap">${esc(parent ? (parent.titulo || parent.tipo) : obra ? obra.titulo : "Idea suelta")}</span>
+      <span class="sep"></span>
+      <div class="grp"><button class="tool" data-tool="pen" aria-label="Pluma">✒︎ Pluma</button><button class="tool" data-tool="hl" aria-label="Marcador">▬ Marcador</button><button class="tool" data-tool="eraser" aria-label="Borrador">⌫ Borrar</button></div>
+      <span class="sep"></span>
+      <div class="grp">${COLORES.map(c => `<button class="tool" data-color="${c.c}" aria-label="${c.n}" style="padding:0 6px"><span class="swatch" style="background:${c.c}"></span></button>`).join("")}</div>
+      <span class="sep"></span>
+      <div class="grp">${GROSORES.map(g => `<button class="tool" data-width="${g.w}" aria-label="${g.n}"><svg width="26" height="14" aria-hidden="true"><line x1="3" y1="7" x2="23" y2="7" stroke="currentColor" stroke-linecap="round" stroke-width="${g.w * 1.2}"/></svg></button>`).join("")}</div>
+      <span class="sep"></span>
+      <div class="grp"><button class="tool" data-a="undo" aria-label="Deshacer">↶</button><button class="tool" data-a="redo" aria-label="Rehacer">↷</button></div>
+      <span class="sep"></span>
+      <div class="grp"><button class="tool" data-a="penonly" aria-label="Solo lápiz">✎ Solo lápiz</button>
+        <button class="tool" data-a="zout" aria-label="Alejar">−</button><button class="tool" data-a="zfit" aria-label="Ajustar">Ajustar</button><button class="tool" data-a="zin" aria-label="Acercar">+</button></div>
+      <span class="sep"></span>
+      <select id="st-papel" aria-label="Papel">${PAPELES.map(p => `<option value="${p.id}" ${p.id === h.papel ? "selected" : ""}>${p.n}</option>`).join("")}</select>
+      <button class="tool" data-a="next">+ Hoja siguiente</button>
+      <button class="tool" data-a="export">Exportar PNG</button>
+      <button class="tool" data-a="delete" style="color:var(--danger)">Eliminar</button>
+      <span class="status" id="st-status"></span>
+    </div>
+    <div class="wrap" id="st-wrap"><div class="page" id="st-page"><canvas id="c-bg"></canvas><canvas id="c-ink"></canvas><canvas id="c-live"></canvas></div><div class="hint" id="st-hint"></div></div>`;
+  document.body.appendChild(el);
+  el.querySelectorAll("[data-tool]").forEach(b => b.addEventListener("click", () => { D.tool = b.dataset.tool; paintTools(); }));
+  el.querySelectorAll("[data-color]").forEach(b => b.addEventListener("click", () => { D.color = b.dataset.color; if (D.tool === "eraser") D.tool = "pen"; paintTools(); }));
+  el.querySelectorAll("[data-width]").forEach(b => b.addEventListener("click", () => { D.width = Number(b.dataset.width); paintTools(); }));
+  el.querySelectorAll("[data-a]").forEach(b => b.addEventListener("click", () => action(b.dataset.a, b)));
+  const t = el.querySelector("#st-title"); t.addEventListener("input", () => queueUpdate("hojas", h.id, {titulo:t.value}));
+  el.querySelector("#st-papel").addEventListener("change", e => { D.sheet.papel = e.target.value; queueUpdate("hojas", h.id, {papel:e.target.value}, 0); drawBg(); scheduleSave(); });
+  wirePointer(el.querySelector("#st-page"), el.querySelector("#st-wrap"));
+  paintTools();
+  window.addEventListener("resize", onResize);
+}
+function onResize(){ if (D.el) { layout(); redrawInk(); } }
+function paintTools(){
+  if (!D.el) return;
+  D.el.querySelectorAll("[data-tool]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === D.tool)));
+  D.el.querySelectorAll("[data-color]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.color === D.color && D.tool !== "eraser")));
+  D.el.querySelectorAll("[data-width]").forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.width) === D.width)));
+  D.el.querySelector('[data-a="penonly"]').setAttribute("aria-pressed", String(D.penOnly));
+}
+function hint(t){ const h = D.el && D.el.querySelector("#st-hint"); if (!h) return; h.textContent = t; h.classList.add("show"); clearTimeout(hint.t); hint.t = setTimeout(() => h.classList.remove("show"), 2200); }
+function setStatus(t){ const s = D.el && D.el.querySelector("#st-status"); if (s) s.textContent = t; }
+
+let K = 1; // logical → backing pixels
+function layout(){
+  const wrap = D.el.querySelector("#st-wrap"), page = D.el.querySelector("#st-page");
+  const fit = Math.min(wrap.clientWidth - 36, (wrap.clientHeight - 36) * W / H * 1.9);
+  const cssW = Math.max(280, Math.round(Math.min(fit, 1100) * D.zoom));
+  page.style.width = cssW + "px"; page.style.height = Math.round(cssW * H / W) + "px";
+  const dpr = window.devicePixelRatio || 1;
+  K = Math.min(cssW / W * dpr, Math.sqrt(8e6 / (W * H)));
+  for (const id of ["c-bg","c-ink","c-live"]) { const c = D.el.querySelector("#" + id); c.width = Math.round(W * K); c.height = Math.round(H * K); }
+  drawBg();
+}
+function ctxOf(id){ const c = D.el.querySelector("#" + id), x = c.getContext("2d"); x.setTransform(K, 0, 0, K, 0, 0); return x; }
+function drawBg(){ drawPaper(ctxOf("c-bg"), D.sheet.papel); }
+function redrawInk(){ const x = ctxOf("c-ink"); x.clearRect(0, 0, W, H); for (const s of D.strokes) drawStroke(x, s); }
+let rafInk = 0; function redrawInkSoon(){ if (!rafInk) rafInk = requestAnimationFrame(() => { rafInk = 0; redrawInk(); }); }
+
+function wirePointer(page, wrap){
+  let cur = null; const touches = new Map(); let pinch = null;
+  const pos = e => { const r = page.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; };
+  const pr = e => e.pointerType === "pen" ? Math.round(Math.max(0.05, e.pressure || 0.5) * 100) : 55;
+  page.addEventListener("pointerdown", e => {
+    if (e.pointerType === "pen" && !D.penOnly) { D.penOnly = true; ls.set("bm:penOnly", true); paintTools(); hint("Lápiz detectado: dibuja con el lápiz, mueve la hoja con los dedos"); }
+    if (e.pointerType === "touch" && D.penOnly) {
+      touches.set(e.pointerId, {x:e.clientX, y:e.clientY}); page.setPointerCapture(e.pointerId);
+      if (touches.size === 2) { const [a, b] = [...touches.values()]; pinch = {d:Math.hypot(a.x - b.x, a.y - b.y), z:D.zoom, w:page.offsetWidth}; }
+      return;
+    }
+    if (cur) return;
+    e.preventDefault(); page.setPointerCapture(e.pointerId);
+    const [x, y] = pos(e);
+    if (D.tool === "eraser") { cur = {id:e.pointerId, erase:true, removed:[]}; eraseAt(x, y, cur); return; }
+    cur = {id:e.pointerId, s:{i:uid(), t:D.tool, c:D.color, w:D.width, p:[Math.round(x*2), Math.round(y*2), pr(e)], ch:D.nChunks - 1}};
+    if (D.tool === "pen") { const ctx = ctxOf("c-ink"); drawStroke(ctx, cur.s); }
+  });
+  page.addEventListener("pointermove", e => {
+    if (touches.has(e.pointerId)) {
+      const prev = touches.get(e.pointerId); touches.set(e.pointerId, {x:e.clientX, y:e.clientY});
+      if (touches.size === 1) { wrap.scrollLeft -= e.clientX - prev.x; wrap.scrollTop -= e.clientY - prev.y; }
+      else if (pinch) { const [a, b] = [...touches.values()]; const z = Math.max(0.6, Math.min(3, pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d));
+        const w = Math.round(pinch.w * z / pinch.z); page.style.width = w + "px"; page.style.height = Math.round(w * H / W) + "px"; D.zoom = z; }
+      return;
+    }
+    if (!cur || e.pointerId !== cur.id) return;
+    e.preventDefault();
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    for (const ev of (evs.length ? evs : [e])) {
+      const [x, y] = pos(ev);
+      if (cur.erase) { eraseAt(x, y, cur); continue; }
+      const p = cur.s.p, X = Math.round(x*2), Y = Math.round(y*2);
+      if (Math.abs(X - p[p.length-3]) + Math.abs(Y - p[p.length-2]) < 2) continue;
+      p.push(X, Y, pr(ev));
+    }
+    if (cur.erase) return;
+    if (cur.s.t === "pen") { const ctx = ctxOf("c-ink"); const p = cur.s.p, n = p.length;
+      if (n >= 9) drawStroke(ctx, {t:"pen", c:cur.s.c, w:cur.s.w, p:p.slice(n - 9)}); }
+    else { const lx = ctxOf("c-live"); lx.clearRect(0, 0, W, H); drawStroke(lx, cur.s); }
+  });
+  const end = e => {
+    if (touches.has(e.pointerId)) { touches.delete(e.pointerId); if (touches.size < 2 && pinch) { pinch = null; layout(); redrawInk(); } return; }
+    if (!cur || e.pointerId !== cur.id) return;
+    if (cur.erase) { if (cur.removed.length) { D.undo.push({type:"erase", strokes:cur.removed}); D.redo = []; scheduleSave(); } }
+    else { D.strokes.push(cur.s); D.dirty.add(cur.s.ch); D.undo.push({type:"add", stroke:cur.s}); D.redo = [];
+      ctxOf("c-live").clearRect(0, 0, W, H); if (cur.s.t === "hl") redrawInk(); else if (cur.s.p.length <= 9) redrawInk(); scheduleSave(); }
+    cur = null;
+  };
+  page.addEventListener("pointerup", end); page.addEventListener("pointercancel", end);
+}
+function eraseAt(x, y, cur){
+  const r = 12 * 2, X = x * 2, Y = y * 2; let hit = false;
+  for (let k = D.strokes.length - 1; k >= 0; k--) {
+    const p = D.strokes[k].p;
+    for (let j = 0; j < p.length; j += 3) { if (Math.abs(p[j] - X) < r && Math.abs(p[j+1] - Y) < r) {
+      const s = D.strokes.splice(k, 1)[0]; cur.removed.push(s); D.dirty.add(s.ch); hit = true; break; } }
+  }
+  if (hit) redrawInkSoon();
+}
+function action(a, btn){
+  if (a === "back") return closeSheet();
+  if (a === "undo" || a === "redo") {
+    const from = a === "undo" ? D.undo : D.redo, to = a === "undo" ? D.redo : D.undo; const op = from.pop(); if (!op) return;
+    const removing = (op.type === "add") === (a === "undo");
+    const list = op.type === "add" ? [op.stroke] : op.strokes;
+    for (const s of list) { if (removing) { const i = D.strokes.indexOf(s); if (i >= 0) D.strokes.splice(i, 1); } else D.strokes.push(s); D.dirty.add(s.ch); }
+    to.push(op); redrawInk(); scheduleSave(); return;
+  }
+  if (a === "penonly") { D.penOnly = !D.penOnly; ls.set("bm:penOnly", D.penOnly); paintTools(); hint(D.penOnly ? "Solo lápiz: los dedos mueven y amplían la hoja" : "Los dedos también dibujan"); return; }
+  if (a === "zin" || a === "zout" || a === "zfit") { D.zoom = a === "zfit" ? 1 : Math.max(0.6, Math.min(3, D.zoom * (a === "zin" ? 1.25 : 0.8))); layout(); redrawInk(); return; }
+  if (a === "next") { const h = D.sheet; flushSave().then(() => { teardown(); newSheet(h.obraId, h.numeroId, h.papel); }); return; }
+  if (a === "export") return exportPNG();
+  if (a === "delete") {
+    if (!btn.classList.contains("armed")) { btn.classList.add("armed"); btn.textContent = "¿Seguro? Toca de nuevo"; setTimeout(() => { btn.classList.remove("armed"); btn.textContent = "Eliminar"; }, 4000); return; }
+    const h = D.sheet; clearTimeout(D.saveT); D.dirty.clear(); teardown();
+    S.hojas = S.hojas.filter(x => x.id !== h.id); render(true); deleteSheetData(Object.assign({}, h, {chunks:D.nChunks}));
+  }
+}
+function scheduleSave(){ setStatus("Sin guardar…"); clearTimeout(D.saveT); D.saveT = setTimeout(saveSheet, 1200); }
+async function flushSave(){ clearTimeout(D.saveT); await saveSheet(); }
+async function saveSheet(){
+  if (!D.sheet) return;
+  if (D.saving) { D.saveT = setTimeout(saveSheet, 600); return; }
+  D.saving = true; setStatus("Guardando…");
+  const h = D.sheet;
+  try {
+    const queue = [...D.dirty].sort((a, b) => a - b); D.dirty.clear();
+    while (queue.length) {
+      const k = queue.shift(); let list = D.strokes.filter(s => s.ch === k);
+      let body = {s:list.map(encStroke)};
+      while (JSON.stringify(body).length > 200000 && list.length > 1) {
+        const nk = D.nChunks++; const moved = list.splice(Math.floor(list.length / 2)); moved.forEach(s => s.ch = nk); queue.push(nk);
+        body = {s:list.map(encStroke)};
+      }
+      await Store.setChunk(h.id, k, body);
+    }
+    const patch = {chunks:D.nChunks, updatedAt:Date.now(), thumb:makeThumb()};
+    Object.assign(h, patch); await Store.update("hojas", h.id, patch);
+    if (D.sheet === h) setStatus(D.dirty.size ? "Sin guardar…" : "Guardado");
+  } catch (e) { setStatus("Error al guardar"); showBanner("No se pudo guardar la hoja: " + (e.message || e.code)); }
+  finally { D.saving = false; }
+}
+function makeThumb(){
+  const c = document.createElement("canvas"); c.width = 240; c.height = Math.round(240 * H / W);
+  const x = c.getContext("2d"); x.scale(240 / W, 240 / W); drawPaper(x, D.sheet.papel); for (const s of D.strokes) drawStroke(x, s);
+  try { return c.toDataURL("image/jpeg", 0.72); } catch { return ""; }
+}
+async function saveFile(blob, filename){
+  try {
+    const file = new File([blob], filename, {type: blob.type});
+    if (navigator.canShare && navigator.canShare({files:[file]})) { await navigator.share({files:[file], title:filename}); return true; }
+  } catch (e) { if (e && e.name === "AbortError") return false; }
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000); return true;
+}
+async function exportPNG(){
+  const c = document.createElement("canvas"); c.width = W * 2; c.height = H * 2;
+  const x = c.getContext("2d"); x.scale(2, 2); drawPaper(x, D.sheet.papel); for (const s of D.strokes) drawStroke(x, s);
+  const blob = await new Promise(r => c.toBlob(r, "image/png"));
+  const name = (D.sheet.titulo || "hoja").replace(/[^\p{L}\p{N} _-]/gu, "").trim() || "hoja";
+  if (await saveFile(blob, name + ".png")) hint("Imagen lista");
+}
+function teardown(){ window.removeEventListener("resize", onResize); if (D.el) D.el.remove(); D.el = null; D.sheet = null; document.body.classList.remove("drawing"); }
+async function closeSheet(){ const h = D.sheet; await flushSave(); teardown(); lastSig = ""; render(true); if (h && h.numeroId && S.view === "obra") S.openNum = h.numeroId; render(true); }
+
+/* ───────── Arranque ───────── */
+(async function start(){
+  await Store.init();
+  for (const coll of ["obras","numeros","hojas"]) {
+    Store.watch(coll, list => {
+      // keep local edits that haven't been flushed yet
+      for (const it of list) { const p = pending.get(coll+"/"+it.id); if (p) Object.assign(it, p.patch); }
+      if (coll === "hojas" && D.sheet) { const live = list.find(x => x.id === D.sheet.id); if (live) Object.assign(live, {thumb:D.sheet.thumb, chunks:D.nChunks}); }
+      for (const [id, it] of creating[coll]) if (!list.some(x => x.id === id)) list.push(it);
+      S[coll] = list; S.loaded[coll] = true;
+      if (D.sheet) { const again = byId(S.hojas, D.sheet.id); if (again) D.sheet = Object.assign(again, {papel:D.sheet.papel, titulo:D.sheet.titulo}); }
+      render(false); paintBackupDot();
+    });
+  }
+  render(true);
+})();
+window.addEventListener("pagehide", () => { if (D.sheet && D.dirty.size) saveSheet(); });
+
+/* ───────── Ejemplo ───────── */
+async function loadExample(){
+  const oid = "ejemplo-rut", t = Date.now();
+  await Store.set("obras", oid, {titulo:"Rut (ejemplo de estructura)", libro:"Rut", forma:"Oratorio", estado:"Idea", referencia:"Rut 1–4", duracion:"ca. 60 min",
+    plantilla:"Narrador (tenor), Rut (soprano), Noemí (contralto), Booz (bajo), coro SATB, 2 oboes, fagot, cuerdas, continuo",
+    notas:"EJEMPLO para mostrar cómo se organiza una obra: bórralo o adáptalo.\nArco: vaciamiento (Moab, muerte) → fidelidad (1:16–17) → redención (el pariente redentor) → llenura (genealogía hacia David y Cristo).\nPlan tonal tentativo: comenzar en menor, llegar al mayor en el coro final.", createdAt:t});
+  const N = [
+    ["Sinfonía","Sinfonía: En los días de los jueces","Rut 1:1","Orquesta","","Ambiente de hambre y desarraigo."],
+    ["Recitativo","Elimelec, Noemí y sus hijos","Rut 1:1–5","Narrador (tenor)","Continuo",""],
+    ["Coro","Lamento en Moab","Rut 1:9–14","Coro SATB","","Modelo para estudiar: coros de lamento en Israel en Egipto."],
+    ["Aria","No me ruegues que te deje","Rut 1:16–17","Rut (soprano)","Oboe obligado, cuerdas","Centro emocional de la obra."],
+    ["Arioso","No me llaméis Noemí, sino Mara","Rut 1:20–21","Noemí (contralto)","",""],
+    ["Coro","Coro de los segadores","Rut 2:4","Coro SATB","","Saludo y respuesta entre Booz y los segadores: escritura antifonal."],
+    ["Dúo","Booz y Rut en el campo","Rut 2:8–13","Rut (soprano), Booz (bajo)","",""],
+    ["Recitativo","En la era","Rut 3","Narrador, Rut, Booz","",""],
+    ["Coro","Testigos somos","Rut 4:9–12","Coro SATB","","Coro del pueblo en la puerta."],
+    ["Coral","Coral final: hacia David","Rut 4:13–22","Coro y todos","Tutti","La genealogía abre hacia David y hacia Cristo (Mt 1:5)."],
+  ];
+  for (let i = 0; i < N.length; i++) { const [tipo, titulo, referencia, voces, instrumentos, notas] = N[i];
+    await Store.set("numeros", "ej-rut-" + (i + 1), {obraId:oid, orden:i + 1, tipo, titulo, referencia, voces, tonalidad:"", tempo:"", instrumentos, estado:"Idea", texto:"", notas, createdAt:t + i}); }
+  go("obra", {obraId:oid});
+}
+
+/* ───────── Respaldo ───────── */
+const DAY = 864e5;
+function paintBackupDot(){ const last = ls.get("bm:lastBackup", 0), any = S.obras.length || S.hojas.length;
+  document.getElementById("backup-dot").hidden = !(any && Date.now() - last > 7 * DAY); }
+function fmtDate(t){ return t ? new Date(t).toLocaleDateString("es-CO", {day:"numeric", month:"long", year:"numeric"}) : "nunca"; }
+function openBackup(){
+  const ov = document.getElementById("overlay");
+  ov.innerHTML = `<div class="drawer-back" data-close></div><aside class="drawer" role="dialog" aria-label="Respaldo">
+    <div style="display:flex;gap:10px"><h3 style="flex:1">Respaldo</h3><button class="icon-btn" data-close aria-label="Cerrar">✕</button></div>
+    <p style="margin:0">Todo tu trabajo vive en este iPad. Haz una copia cada semana y guárdala en <b>Archivos → iCloud Drive</b>. Si cambias de iPad o algo falla, la restauras desde aquí.</p>
+    <p class="muted" style="margin:0">Última copia: <b>${fmtDate(ls.get("bm:lastBackup", 0))}</b> · ${S.obras.length} obras · ${S.numeros.length} números · ${S.hojas.length} hojas</p>
+    <button class="btn primary" id="bk-export">Guardar copia de seguridad</button>
+    <div class="field"><label for="bk-file">Restaurar una copia</label><input type="file" id="bk-file" accept=".json,application/json"></div>
+    <p class="muted" style="margin:0;font-size:.9rem">Restaurar agrega lo que hay en la copia y reemplaza lo que tenga el mismo nombre interno. No borra lo demás.</p>
+    <p id="bk-msg" style="margin:0"></p></aside>`;
+  ov.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", closeDrawer));
+  const msg = t => { document.getElementById("bk-msg").textContent = t; };
+  document.getElementById("bk-export").addEventListener("click", async () => {
+    if (D.sheet) await flushSave();
+    msg("Preparando copia…");
+    const out = {app:"biblia-musical", formato:1, exportado:new Date().toISOString()};
+    for (const c of ["obras","numeros","hojas"]) out[c] = Object.fromEntries(Store.cache[c]);
+    out.trazos = Store.mode === "idb" ? Object.fromEntries(await IDB.entries("trazos")) : Object.fromEntries(Store.mem);
+    const d = new Date(), name = `biblia-musical-respaldo-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}.json`;
+    const ok = await saveFile(new Blob([JSON.stringify(out)], {type:"application/json"}), name);
+    if (ok) { ls.set("bm:lastBackup", Date.now()); paintBackupDot(); msg("Copia lista: " + name); } else msg("Copia cancelada.");
+  });
+  document.getElementById("bk-file").addEventListener("change", async e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (data.app !== "biblia-musical") throw new Error("Este archivo no es una copia de la Biblia Musical.");
+      for (const c of ["obras","numeros","hojas"]) for (const [id, v] of Object.entries(data[c] || {})) await Store.set(c, id, v);
+      for (const [k, v] of Object.entries(data.trazos || {})) { const i = k.lastIndexOf(":"); await Store.setChunk(k.slice(0, i), Number(k.slice(i + 1)), v); }
+      msg(`Restaurado: ${Object.keys(data.obras || {}).length} obras y ${Object.keys(data.hojas || {}).length} hojas.`); render(true);
+    } catch (err) { msg("No se pudo restaurar: " + (err.message || err)); }
+  });
+}
+document.getElementById("tab-respaldo").addEventListener("click", openBackup);
+document.getElementById("banner-x").addEventListener("click", () => { document.getElementById("banner").hidden = true; });
+
+/* ───────── Instalación y actualizaciones ───────── */
+(function(){
+  const standalone = window.navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+  if (!standalone && !ls.get("bm:installHint", false)) document.getElementById("install").hidden = false;
+  document.getElementById("install-x").addEventListener("click", () => { ls.set("bm:installHint", true); document.getElementById("install").hidden = true; });
+  if (!("serviceWorker" in navigator) || location.protocol === "file:") return;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (!reloading) { reloading = true; location.reload(); } });
+  navigator.serviceWorker.register("sw.js").then(reg => {
+    const offer = w => { const b = document.getElementById("update"); b.hidden = false;
+      document.getElementById("update-go").onclick = async () => { if (D.sheet) await flushSave(); w.postMessage("skipWaiting"); }; };
+    if (reg.waiting && navigator.serviceWorker.controller) offer(reg.waiting);
+    reg.addEventListener("updatefound", () => { const w = reg.installing; if (!w) return;
+      w.addEventListener("statechange", () => { if (w.state === "installed" && navigator.serviceWorker.controller) offer(w); }); });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update().catch(() => {}); });
+  }).catch(() => {});
+})();
+
+</script>
+</body>
+</html>

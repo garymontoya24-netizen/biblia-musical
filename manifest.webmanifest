@@ -1,0 +1,17 @@
+{
+  "name": "Biblia Musical",
+  "short_name": "Biblia Musical",
+  "description": "Cuaderno de composición: los 66 libros, obras, números y hojas de pentagrama a mano.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F3F5F2",
+  "theme_color": "#24456B",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
