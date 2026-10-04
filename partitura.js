@@ -91,6 +91,7 @@ function buildScoreUI(){
       <select id="sc-compas" aria-label="Compás">${COMPASES.map(c => `<option ${c === sc.compas ? "selected" : ""}>${c}</option>`).join("")}</select>
       <select id="sc-tono" aria-label="Tonalidad">${TONOS.map(t => `<option value="${t[0]}" ${t[0] === sc.tono ? "selected" : ""}>${t[2]}</option>`).join("")}</select>
       <button class="tool" data-a="inst">Instrumentos</button>
+      <div class="seg" role="group" aria-label="Vista"><button class="tool" data-view="horizontal">⟷ Horizontal</button><button class="tool" data-view="paginas">▤ Páginas</button></div>
       <span class="sep"></span>
       <button class="tool" data-a="xml">Exportar a MuseScore</button>
       <button class="tool" data-a="delete" style="color:var(--danger)">Eliminar</button>
@@ -131,6 +132,7 @@ function buildScoreUI(){
   ly.addEventListener("input", () => { const e = selEv(); if (e) { e.ly = ly.value; scheduleScoreSave(); renderScoreSoon(); } });
   ly.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " " || e.key === "Tab") { e.preventDefault(); if (e.key === " " && !ly.value.endsWith("-")) {} scoreAction("lynext"); } });
   el.querySelector("#sc-host").addEventListener("click", onScoreTap);
+  el.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => { ls.set("bm:scoreView", b.dataset.view); paintScoreTools(); P.el.querySelector("#sc-wrap").scrollTo(0, 0); renderScore(); }));
   buildPiano();
   window.addEventListener("resize", renderScoreSoon);
   document.addEventListener("keydown", onScoreKey);
@@ -143,6 +145,7 @@ function paintScoreTools(){
   const on = {dot: ed ? !!e.dot : P.tool.dot, rest: ed ? !!e.r : P.tool.rest, chord: P.tool.chord};
   P.el.querySelectorAll("[data-t]").forEach(b => b.setAttribute("aria-pressed", String(on[b.dataset.t])));
   P.el.querySelector('[data-a="tie"]').setAttribute("aria-pressed", String(!!(e && e.tie)));
+  P.el.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === scoreView())));
   P.el.querySelector('[data-a="kbd"]').setAttribute("aria-pressed", String(!P.el.querySelector("#sc-piano").hidden));
   const ly = P.el.querySelector("#sc-ly"); if (ly !== document.activeElement) ly.value = e ? (e.ly || "") : "";
   ly.disabled = !e || e.r;
@@ -298,114 +301,152 @@ function staffMeasures(events, cap){
   return ms;
 }
 let rafScore = 0; function renderScoreSoon(){ if (!rafScore) rafScore = requestAnimationFrame(() => { rafScore = 0; renderScore(); }); }
-const STAFF_GAP = 96, LEFT = 74;
+const STAFF_GAP = 96, LEFT = 74, PAGE_W = 794, PAGE_H = 1123, MARG = 50, TITLE_H = 110;
+// Dos vistas, como en MuseScore: "horizontal" (una sola línea continua para componer)
+// y "páginas" (sistemas repartidos en hojas tamaño carta/A4, para revisar e imprimir).
+function scoreView(){ return ls.get("bm:scoreView", "horizontal"); }
 function renderScore(){
   if (!P.el) return;
-  const host = P.el.querySelector("#sc-host"), sc = P.sc, cap = capOf(sc), keyName = tonoVF(sc.tono);
+  const host = P.el.querySelector("#sc-host"), wrap = P.el.querySelector("#sc-wrap"), sc = P.sc, cap = capOf(sc), keyName = tonoVF(sc.tono);
   const [num, den] = sc.compas.split("/").map(Number);
-  const width = Math.max(320, Math.min(1400, P.el.querySelector("#sc-wrap").clientWidth - 24));
+  const pages = scoreView() === "paginas";
+  const keepLeft = wrap.scrollLeft;
   const per = sc.pentagramas.map(st => staffMeasures(st.ev, cap));
   const contentM = Math.max(0, ...per.map(ms => ms[0].length ? ms.length : 0));
   const M = contentM + 1; // siempre un compás vacío al final para seguir escribiendo
-  // Ancho mínimo de cada compás según cuántas notas tiene
   const minW = []; for (let m = 0; m < M; m++) minW.push(m === contentM ? 170 : 56 + 30 * Math.max(1, ...per.map(ms => (ms[m] || []).length)));
-  const prefix = 52 + Math.abs(sc.tono) * 11, avail = width - LEFT - 12;
-  const systems = []; let cur = [], used = 0;
-  for (let m = 0; m < M; m++) { const w = minW[m] + (cur.length ? 0 : prefix) + (m === 0 ? 34 : 0);
-    if (cur.length && used + w > avail) { systems.push(cur); cur = []; used = 0; m--; continue; } cur.push(m); used += w; }
-  if (cur.length) systems.push(cur);
+  const prefix = 52 + Math.abs(sc.tono) * 11;
   const nSt = sc.pentagramas.length, sysH = nSt * STAFF_GAP + 44;
-  host.innerHTML = "";
-  const renderer = new VF.Renderer(host, VF.Renderer.Backends.SVG);
-  renderer.resize(width, systems.length * sysH + 30);
-  const ctx = renderer.getContext();
-  P.hits = []; P.geo = [];
+  const extra = m => (m === 0 ? 34 : 0);
+  // Reparto en sistemas
+  let systems = [], avail;
+  if (!pages) { systems = [[...Array(M).keys()]]; avail = Infinity; }
+  else {
+    avail = PAGE_W - 2 * MARG - LEFT;
+    let cur = [], used = 0;
+    for (let m = 0; m < M; m++) { const w = minW[m] + (cur.length ? 0 : prefix) + extra(m);
+      if (cur.length && used + w > avail) { systems.push(cur); cur = []; used = 0; m--; continue; } cur.push(m); used += w; }
+    if (cur.length) systems.push(cur);
+  }
+  // Reparto en páginas
+  const pageSys = [];
+  if (!pages) pageSys.push(systems.map((_, i) => i));
+  else { let pg = [], y = MARG + TITLE_H;
+    systems.forEach((_, i) => { if (pg.length && y + sysH > PAGE_H - MARG - 20) { pageSys.push(pg); pg = []; y = MARG; } pg.push(i); y += sysH; });
+    if (pg.length) pageSys.push(pg); }
+  host.innerHTML = ""; host.classList.toggle("paged", pages);
+  P.hits = []; P.geo = []; P.svgs = [];
   const noteRefs = sc.pentagramas.map(() => []);
-  systems.forEach((sys, si) => {
-    const y0 = 24 + si * sysH;
-    const raw = sys.map((m, j) => minW[m] + (j === 0 ? prefix : 0) + (m === 0 ? 34 : 0));
-    const total = raw.reduce((a, b) => a + b, 0);
-    const stretch = si < systems.length - 1 || total > avail * 0.65 ? avail / total : 1;
-    let x = LEFT; const firstStaves = [];
-    sys.forEach((m, j) => {
-      const mw = raw[j] * stretch, staves = [], voices = [], beams = [], notesBy = [];
-      sc.pentagramas.forEach((st, k) => {
-        const cl = CLAVES[st.clave] || CLAVES.treble;
-        const stave = new VF.Stave(x, y0 + k * STAFF_GAP, mw);
-        if (j === 0) { if (cl.ann) stave.addClef(cl.vf, "default", cl.ann); else stave.addClef(cl.vf); stave.addKeySignature(keyName); }
-        if (m === 0) stave.addTimeSignature(sc.compas);
-        stave.setContext(ctx).draw(); staves.push(stave);
-        if (j === 0) firstStaves.push(stave);
-        P.geo.push({si, k, m, x0:x, x1:x + mw, yTop:stave.getYForLine(0), sp:stave.getSpacingBetweenLines()});
-        const pieces = per[k][m] || null;
-        let notes;
-        if (m === contentM) { notes = []; }
-        else if (!pieces || !pieces.length) {
-          notes = [new VF.StaveNote({keys:[cl.rest], duration:"wr", clef:cl.vf, align_center:true})];
-        } else {
-          notes = pieces.map(pc => {
-            const keys = pc.r || !pc.p.length ? [cl.rest] : pc.p.map(p => STEPS[p.s].toLowerCase() + ({1:"#", "-1":"b", 2:"##", "-2":"bb"}[p.a] || "") + "/" + (p.o - cl.shift));
-            const n = new VF.StaveNote({keys, duration:pc.d + (pc.r ? "r" : ""), clef:cl.vf, auto_stem:true});
-            if (pc.dot) VF.Dot.buildAndAttach([n], {all:true});
-            if (pc.ly) n.addModifier(new VF.Annotation(pc.ly).setFont("Alegreya Sans, sans-serif", 13).setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
-            if (P.sel && P.sel.k === k && P.sel.i === pc.i) n.setStyle({fillStyle:"#1F4E99", strokeStyle:"#1F4E99"});
-            pc.note = n; pc.si = si; noteRefs[k].push(pc);
-            return n;
-          });
-        }
-        if (!notes.length) return;
-        const v = new VF.Voice({num_beats:num, beat_value:den}).setMode(VF.Voice.Mode.SOFT).addTickables(notes);
-        voices.push(v); notesBy.push(notes); v.__stave = stave;
-        try { beams.push(...VF.Beam.generateBeams(notes.filter(n => !n.isRest()))); } catch {}
-      });
-      const startX = Math.max(...staves.map(s => s.getNoteStartX()));
-      staves.forEach(s => s.setNoteStartX(startX));
-      if (voices.length) {
-        try { VF.Accidental.applyAccidentals(voices, keyName); } catch {}
-        const fmt = new VF.Formatter(); voices.forEach(v => fmt.joinVoices([v]));
-        fmt.format(voices, Math.max(40, x + mw - startX - 14));
-        voices.forEach(v => v.draw(ctx, v.__stave));
-      }
-      beams.forEach(b => b.setContext(ctx).draw());
-      sc.pentagramas.forEach((st, k) => (per[k][m] || []).forEach(pc => { if (pc.note) P.hits.push({si, k, i:pc.i, x:pc.note.getAbsoluteX(), start:pc.start, u:pc.u, y0:staves[0].getYForLine(0), y1:staves[staves.length - 1].getYForLine(4)}); }));
-      x += mw;
-    });
-    if (firstStaves.length > 1) {
-      const isPiano = nSt === 2 && sc.pentagramas.every(st => st.sonido === "piano" || st.sonido === "organo");
-      new VF.StaveConnector(firstStaves[0], firstStaves[nSt - 1]).setType(isPiano ? VF.StaveConnector.type.BRACE : VF.StaveConnector.type.BRACKET).setContext(ctx).draw();
-      new VF.StaveConnector(firstStaves[0], firstStaves[nSt - 1]).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(ctx).draw();
+  const h = P.hoja, obra = h && h.obraId ? byId(S.obras, h.obraId) : null, numero = h && h.numeroId ? byId(S.numeros, h.numeroId) : null;
+  pageSys.forEach((list, pg) => {
+    const box = document.createElement("div"); box.className = pages ? "pg" : "strip"; host.appendChild(box);
+    let width, height;
+    if (pages) { width = PAGE_W; height = PAGE_H; box.style.width = PAGE_W + "px"; box.style.height = PAGE_H + "px"; }
+    else { const tot = systems[0].reduce((a, m, j) => a + minW[m] * 1.15 + (j === 0 ? prefix : 0) + extra(m), 0); width = Math.max(wrap.clientWidth - 24, LEFT + tot + 30); height = sysH + 30; }
+    if (pages) {
+      const head = pg === 0 ? `<div class="pg-title"><h2>${esc(numero ? numero.titulo || h.titulo : h.titulo)}</h2><p>${esc([obra && obra.titulo, numero && numero.referencia, numero && numero.tipo].filter(Boolean).join(" · "))}</p></div>` : "";
+      box.innerHTML = `${head}<div class="pg-num">${pg + 1}</div>`;
     }
-    ctx.save(); ctx.setFont("Alegreya Sans, sans-serif", 12, "");
-    sc.pentagramas.forEach((st, k) => { const nm = si === 0 ? st.nombre : abbrev(st.nombre); ctx.fillText(nm.slice(0, 13), 4, y0 + k * STAFF_GAP + 44); });
-    ctx.restore();
+    const renderer = new VF.Renderer(box, VF.Renderer.Backends.SVG);
+    renderer.resize(width, height);
+    const ctx = renderer.getContext(); const svg = box.querySelector("svg"); svg.dataset.pg = pg; P.svgs[pg] = svg;
+    list.forEach((si, n) => {
+      const sys = systems[si];
+      const y0 = pages ? (pg === 0 ? MARG + TITLE_H : MARG) + n * sysH : 24;
+      const x0 = pages ? MARG : 0;
+      const raw = sys.map((m, j) => minW[m] + (j === 0 ? prefix : 0) + extra(m));
+      const total = raw.reduce((a, b) => a + b, 0);
+      const stretch = !pages ? 1.15 : (si < systems.length - 1 || total > avail * 0.65 ? avail / total : 1);
+      let x = x0 + LEFT; const firstStaves = [];
+      sys.forEach((m, j) => {
+        const mw = raw[j] * stretch, staves = [], voices = [], beams = [];
+        sc.pentagramas.forEach((st, k) => {
+          const cl = CLAVES[st.clave] || CLAVES.treble;
+          const stave = new VF.Stave(x, y0 + k * STAFF_GAP, mw);
+          if (j === 0) { if (cl.ann) stave.addClef(cl.vf, "default", cl.ann); else stave.addClef(cl.vf); stave.addKeySignature(keyName); }
+          if (m === 0) stave.addTimeSignature(sc.compas);
+          if (pages && m === contentM - 1) stave.setEndBarType(VF.Barline.type.END);
+          stave.setContext(ctx).draw(); staves.push(stave);
+          if (j === 0) firstStaves.push(stave);
+          P.geo.push({pg, si, k, m, x0:x, x1:x + mw, yTop:stave.getYForLine(0), sp:stave.getSpacingBetweenLines()});
+          const pieces = per[k][m] || null;
+          let notes;
+          if (m === contentM) notes = [];
+          else if (!pieces || !pieces.length) notes = [new VF.StaveNote({keys:[cl.rest], duration:"wr", clef:cl.vf, align_center:true})];
+          else notes = pieces.map(pc => {
+            const keys = pc.r || !pc.p.length ? [cl.rest] : pc.p.map(p => STEPS[p.s].toLowerCase() + ({1:"#", "-1":"b", 2:"##", "-2":"bb"}[p.a] || "") + "/" + (p.o - cl.shift));
+            const nt = new VF.StaveNote({keys, duration:pc.d + (pc.r ? "r" : ""), clef:cl.vf, auto_stem:true});
+            if (pc.dot) VF.Dot.buildAndAttach([nt], {all:true});
+            if (pc.ly) nt.addModifier(new VF.Annotation(pc.ly).setFont("Alegreya Sans, sans-serif", 13).setVerticalJustification(VF.Annotation.VerticalJustify.BOTTOM), 0);
+            if (P.sel && P.sel.k === k && P.sel.i === pc.i) nt.setStyle({fillStyle:"#1F4E99", strokeStyle:"#1F4E99"});
+            pc.note = nt; pc.si = si; pc.ctx = ctx; noteRefs[k].push(pc);
+            return nt;
+          });
+          if (!notes.length) return;
+          const v = new VF.Voice({num_beats:num, beat_value:den}).setMode(VF.Voice.Mode.SOFT).addTickables(notes);
+          v.__stave = stave; voices.push(v);
+          try { beams.push(...VF.Beam.generateBeams(notes.filter(nt => !nt.isRest()))); } catch {}
+        });
+        const startX = Math.max(...staves.map(s => s.getNoteStartX()));
+        staves.forEach(s => s.setNoteStartX(startX));
+        if (voices.length) {
+          try { VF.Accidental.applyAccidentals(voices, keyName); } catch {}
+          const fmt = new VF.Formatter(); voices.forEach(v => fmt.joinVoices([v]));
+          fmt.format(voices, Math.max(40, x + mw - startX - 14));
+          voices.forEach(v => v.draw(ctx, v.__stave));
+        }
+        beams.forEach(b => b.setContext(ctx).draw());
+        sc.pentagramas.forEach((st, k) => (per[k][m] || []).forEach(pc => { if (pc.note) P.hits.push({pg, si, k, i:pc.i, x:pc.note.getAbsoluteX(), start:pc.start, u:pc.u, y0:staves[0].getYForLine(0), y1:staves[staves.length - 1].getYForLine(4)}); }));
+        x += mw;
+      });
+      if (firstStaves.length > 1) {
+        const isPiano = nSt === 2 && sc.pentagramas.every(st => st.sonido === "piano" || st.sonido === "organo");
+        new VF.StaveConnector(firstStaves[0], firstStaves[nSt - 1]).setType(isPiano ? VF.StaveConnector.type.BRACE : VF.StaveConnector.type.BRACKET).setContext(ctx).draw();
+        new VF.StaveConnector(firstStaves[0], firstStaves[nSt - 1]).setType(VF.StaveConnector.type.SINGLE_LEFT).setContext(ctx).draw();
+      }
+      if (pages) { ctx.save(); ctx.setFont("Alegreya Sans, sans-serif", 12, "");
+        sc.pentagramas.forEach((st, k) => ctx.fillText((si === 0 ? st.nombre : abbrev(st.nombre)).slice(0, 13), x0 + 2, y0 + k * STAFF_GAP + 44));
+        ctx.restore(); }
+    });
+    if (!pages) { // nombres fijos a la izquierda mientras se desplaza la línea
+      const nm = document.createElement("div"); nm.className = "strip-names";
+      nm.innerHTML = sc.pentagramas.map((st, k) => `<span style="top:${24 + k * STAFF_GAP + 30}px">${esc(abbrev(st.nombre))}</span>`).join("");
+      box.prepend(nm);
+    }
   });
-  // Ligaduras (también entre compases y sistemas)
+  // Ligaduras (también entre compases, sistemas y páginas)
   noteRefs.forEach(list => { for (let j = 0; j < list.length - 1; j++) { const a = list[j], b = list[j + 1];
     if (!a.tie || a.r || b.r) continue;
     const idx = a.p.map((_, q) => q);
     try {
-      if (a.si === b.si) new VF.StaveTie({first_note:a.note, last_note:b.note, first_indices:idx, last_indices:idx}).setContext(ctx).draw();
-      else { new VF.StaveTie({first_note:a.note, last_note:null, first_indices:idx, last_indices:idx}).setContext(ctx).draw();
-             new VF.StaveTie({first_note:null, last_note:b.note, first_indices:idx, last_indices:idx}).setContext(ctx).draw(); }
+      if (a.si === b.si) new VF.StaveTie({first_note:a.note, last_note:b.note, first_indices:idx, last_indices:idx}).setContext(a.ctx).draw();
+      else { new VF.StaveTie({first_note:a.note, last_note:null, first_indices:idx, last_indices:idx}).setContext(a.ctx).draw();
+             new VF.StaveTie({first_note:null, last_note:b.note, first_indices:idx, last_indices:idx}).setContext(b.ctx).draw(); }
     } catch {}
   } });
   // Cursor: dónde entra la próxima nota
   const k = P.sel ? P.sel.k : 0, list = P.hits.filter(h => h.k === k);
-  let cx = null, csi = 0;
-  if (P.sel) { const h = list.filter(h => h.i === P.sel.i).pop(); if (h) { cx = h.x + 22; csi = h.si; } }
-  else if (list.length) { const h = list[list.length - 1]; cx = h.x + 22; csi = h.si; }
-  else { const g = P.geo.find(g => g.k === k && g.m === 0); if (g) { cx = g.x0 + prefix + 40; csi = 0; } }
+  let cx = null, csi = 0, cpg = 0;
+  const lastH = P.sel ? list.filter(h => h.i === P.sel.i).pop() : list[list.length - 1];
+  if (lastH) { cx = lastH.x + 22; csi = lastH.si; cpg = lastH.pg; }
+  else { const g = P.geo.find(g => g.k === k && g.m === 0); if (g) { cx = g.x0 + prefix + 40; csi = g.si; cpg = g.pg; } }
   const g = P.geo.find(g => g.si === csi && g.k === k);
-  if (cx !== null && g) { const svg = host.querySelector("svg"), r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  if (cx !== null && g) { const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     r.setAttribute("x", cx - 2); r.setAttribute("y", g.yTop - 6); r.setAttribute("width", 3); r.setAttribute("height", g.sp * 4 + 12); r.setAttribute("rx", 1.5); r.setAttribute("fill", "#1F4E99"); r.setAttribute("opacity", ".45");
-    svg.appendChild(r); }
+    P.svgs[cpg].appendChild(r);
+    if (!pages) { // mantener a la vista el punto donde se escribe
+      wrap.scrollLeft = keepLeft;
+      const vis0 = wrap.scrollLeft + 90, vis1 = wrap.scrollLeft + wrap.clientWidth - 120;
+      if (cx < vis0 || cx > vis1) wrap.scrollLeft = Math.max(0, cx - wrap.clientWidth * 0.6);
+    }
+  }
 }
 function abbrev(n){ return n.replace(/\(.*?\)/g, "").trim().split(/\s+/).map(w => w.slice(0, 3) + ".").join(" "); }
 
 function onScoreTap(e){
-  const svg = P.el.querySelector("#sc-host svg"); if (!svg) return;
-  const r = svg.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-  const g = P.geo.find(g => x >= g.x0 - 30 && x <= g.x1 && y >= g.yTop - 4.5 * g.sp && y <= g.yTop + 8.5 * g.sp);
+  const svg = e.target.closest && e.target.closest("svg"); if (!svg || svg.dataset.pg === undefined) return;
+  const pg = Number(svg.dataset.pg), r = svg.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  const g = P.geo.find(g => g.pg === pg && x >= g.x0 - 30 && x <= g.x1 && y >= g.yTop - 4.5 * g.sp && y <= g.yTop + 8.5 * g.sp);
   if (!g) return;
   const near = P.hits.filter(h => h.si === g.si && h.k === g.k).map(h => ({h, d:Math.abs(h.x + 6 - x)})).sort((a, b) => a.d - b.d)[0];
   if (near && near.d < 13) {
@@ -518,9 +559,10 @@ function startPlayback(){
     const cu = from + (ac.currentTime - t0) / spu;
     if (cu >= endU) { stopPlayback(); return; }
     const h = P.hits.filter(h => h.start <= cu && cu < h.start + h.u).sort((a, b) => a.k - b.k)[0];
-    if (h) { const svg = P.el.querySelector("#sc-host svg"), sr = svg.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+    if (h) { const svg = P.svgs[h.pg], sr = svg.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
       ph.hidden = false; ph.style.left = (sr.left - wr.left + wrap.scrollLeft + h.x - 4) + "px"; ph.style.top = (sr.top - wr.top + wrap.scrollTop + h.y0 - 14) + "px"; ph.style.height = (h.y1 - h.y0 + 28) + "px";
-      const top = sr.top - wr.top + h.y0; if (top < 20 || top > wrap.clientHeight - 120) wrap.scrollBy({top:top - 80, behavior:"smooth"}); }
+      const top = sr.top - wr.top + h.y0; if (top < 20 || top > wrap.clientHeight - 120) wrap.scrollBy({top:top - 80, behavior:"smooth"});
+      const left = sr.left - wr.left + h.x; if (left < 80 || left > wrap.clientWidth - 80) wrap.scrollBy({left:left - wrap.clientWidth * 0.3}); }
     play.raf = requestAnimationFrame(tick);
   };
   play.raf = requestAnimationFrame(tick);

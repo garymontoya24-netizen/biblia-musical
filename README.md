@@ -16,7 +16,9 @@ Se escribe tocando el pentagrama con el lápiz donde va la nota (o con el teclad
 o con un teclado físico: letras A–G, números 2–6 para la figura, `.` puntillo, `0` silencio, flechas,
 borrar, espacio para reproducir). Tiene puntillo, silencios, acordes, alteraciones, ligaduras, letra
 sílaba por sílaba, compás, tonalidad, tempo y sonido por pentagrama (piano, órgano, voz, cuerdas, flauta).
-**Exportar a MuseScore** guarda un archivo `.musicxml` que abre MuseScore, Dorico, Finale o Sibelius.
+Se compone en **vista horizontal** (una sola línea continua que se desplaza hacia la derecha, con los
+nombres de las voces fijos a la izquierda) y con **▤ Páginas** se ve repartida en hojas con título y número
+de página para revisarla al final. **Exportar a MuseScore** guarda un archivo `.musicxml` que abre MuseScore, Dorico, Finale o Sibelius.
 
 ## Archivos
 
