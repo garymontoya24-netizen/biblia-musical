@@ -137,7 +137,29 @@ main{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:24px 80px}
 .sheet-card .thumb{aspect-ratio:1/1.414;width:100%;max-width:100%;background:#FBFBF8;border-radius:4px;overflow:hidden;display:grid;place-items:center}
 .sheet-card .thumb img{width:100%;height:100%;object-fit:cover}
 .sheet-card span{font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sheet-new{border-style:dashed;background:transparent;color:var(--muted);display:grid;place-items:center;aspect-ratio:1/1.55;font-size:.9rem}
+.sheet-new{border-style:dashed;background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.95rem;flex:1;min-height:0}
+.sheet-new small{font-size:.75rem}
+.sheet-new-group{display:flex;flex-direction:column;gap:8px;aspect-ratio:1/1.55}
+.score-thumb{display:flex!important;flex-direction:column;gap:6px;padding:6px;text-align:center;font-size:.72rem}
+/* Partitura */
+.score-studio .palette{gap:6px}
+.mini{display:inline-flex;align-items:center;gap:4px;font-size:.88rem;white-space:nowrap;flex:none}
+.mini input{width:62px;border:1px solid var(--rule);border-radius:8px;min-height:40px;padding:4px 8px;background:var(--surface)}
+.mini.lyr input{width:110px}
+.tool.acc{font-size:1.35rem;font-family:var(--f-display)}
+.tool.play{font-weight:700;color:var(--accent)}
+.score-wrap{flex:1;overflow:auto;position:relative;background:#FBFBF8;-webkit-overflow-scrolling:touch}
+.score{margin:0 auto;padding:12px;width:fit-content;max-width:100%}
+.score svg{display:block;cursor:crosshair}
+.playhead{position:absolute;width:20px;border-radius:6px;background:rgba(31,78,153,.16);pointer-events:none}
+.score-help{flex:none;padding:6px 14px;font-size:.85rem;color:var(--muted);background:var(--surface);border-top:1px solid var(--rule)}
+.piano{flex:none;background:var(--surface);border-top:1px solid var(--rule);padding:6px 10px 10px}
+.pz-oct{display:flex;align-items:center;justify-content:center;gap:12px;font-size:.85rem;color:var(--muted)}
+.pz-keys{position:relative;height:120px;margin-top:4px}
+.pz-w{position:absolute;top:0;bottom:0;background:#FFFFFF;border:1px solid #9AA0AA;border-radius:0 0 6px 6px}
+.pz-b{position:absolute;top:0;height:62%;background:#1B1E2A;border:0;border-radius:0 0 4px 4px;z-index:1}
+.pz-w:active{background:#DCE6F4}.pz-b:active{background:#3F6596}
+.inst{border:1px solid var(--rule);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:8px}
 
 /* Cuaderno */
 body.drawing{overflow:hidden}
@@ -266,9 +288,9 @@ const Store = {
   async del(coll, id){ this.cache[coll].delete(id); this.notify(coll); if (this.mode === "idb") await IDB.write(coll, os => os.delete(id)); },
   mem: new Map(),
   async getChunks(hid){
-    if (this.mode !== "idb") return [...this.mem].filter(([k]) => k.startsWith(hid + ":")).map(([k, v]) => ({k:Number(k.split(":")[1]), s:v.s || []}));
+    if (this.mode !== "idb") return [...this.mem].filter(([k]) => k.startsWith(hid + ":")).map(([k, v]) => Object.assign({}, v, {k:Number(k.split(":")[1]), s:v.s || []}));
     const rows = await IDB.entries("trazos", IDBKeyRange.bound(hid + ":", hid + ":￿"));
-    return rows.map(([k, v]) => ({k:Number(String(k).split(":")[1]), s:v.s || []}));
+    return rows.map(([k, v]) => Object.assign({}, v, {k:Number(String(k).split(":")[1]), s:v.s || []}));
   },
   async setChunk(hid, k, data){ if (this.mode !== "idb") { this.mem.set(hid + ":" + k, data); return; } await IDB.write("trazos", os => os.put(data, hid + ":" + k)); },
   async delChunks(hid, n){ if (this.mode !== "idb") { for (let k = 0; k < n; k++) this.mem.delete(hid + ":" + k); return; }
@@ -373,11 +395,15 @@ async function newObra(libro){
 
 function sheetGrid(oid, nid){
   const hs = hojasOf(oid, nid);
-  return `<div class="sheets">${hs.map(hj => `<button class="sheet-card" data-sheet="${hj.id}"><div class="thumb">${hj.thumb ? `<img alt="" src="${esc(hj.thumb)}">` : `<span class="muted mono">${esc((PAPELES.find(p=>p.id===hj.papel)||PAPELES[0]).n)}</span>`}</div><span>${esc(hj.titulo || "Hoja")}</span></button>`).join("")}
-    <button class="sheet-card sheet-new" data-newsheet data-o="${oid||""}" data-n="${nid||""}">+ Nueva hoja</button></div>`;
+  return `<div class="sheets">${hs.map(hj => hj.tipo === "partitura"
+      ? `<button class="sheet-card" data-sheet="${hj.id}"><div class="thumb score-thumb"><svg viewBox="0 0 60 40" width="64" aria-hidden="true">${[0,1,2,3,4].map(i => `<line x1="2" x2="58" y1="${10+i*5}" y2="${10+i*5}" stroke="#8C929C" stroke-width=".8"/>`).join("")}<ellipse cx="20" cy="27.5" rx="3.6" ry="2.6" fill="#1B1E2A"/><line x1="23.4" x2="23.4" y1="27" y2="12" stroke="#1B1E2A" stroke-width="1"/><ellipse cx="38" cy="20" rx="3.6" ry="2.6" fill="#1B1E2A"/><line x1="41.4" x2="41.4" y1="19.5" y2="5" stroke="#1B1E2A" stroke-width="1"/></svg><small class="muted">${esc(hj.resumen || "Partitura")}</small></div><span>♪ ${esc(hj.titulo || "Partitura")}</span></button>`
+      : `<button class="sheet-card" data-sheet="${hj.id}"><div class="thumb">${hj.thumb ? `<img alt="" src="${esc(hj.thumb)}">` : `<span class="muted mono">${esc((PAPELES.find(p=>p.id===hj.papel)||PAPELES[0]).n)}</span>`}</div><span>${esc(hj.titulo || "Hoja")}</span></button>`).join("")}
+    <div class="sheet-new-group"><button class="sheet-card sheet-new" data-newscore data-o="${oid||""}" data-n="${nid||""}">♪ Nueva partitura<small>notas que suenan</small></button>
+    <button class="sheet-card sheet-new" data-newsheet data-o="${oid||""}" data-n="${nid||""}">✎ Nueva hoja<small>a mano alzada</small></button></div></div>`;
 }
 function wireSheets(root){
   root.querySelectorAll("[data-sheet]").forEach(b => b.addEventListener("click", () => openSheet(b.dataset.sheet)));
+  root.querySelectorAll("[data-newscore]").forEach(b => b.addEventListener("click", () => newScoreDialog(b.dataset.o || null, b.dataset.n || null)));
   root.querySelectorAll("[data-newsheet]").forEach(b => b.addEventListener("click", () => newSheet(b.dataset.o || null, b.dataset.n || null)));
 }
 
@@ -594,6 +620,7 @@ function decStroke(o, ch){ const p = []; let a = 0, b = 0, c = 0; const d = o.d 
 
 async function openSheet(id){
   const h = byId(S.hojas, id); if (!h) return;
+  if (h.tipo === "partitura") return openScore(id);
   D.sheet = h; D.strokes = []; D.undo = []; D.redo = []; D.dirty = new Set(); D.nChunks = h.chunks || 1;
   document.body.classList.add("drawing"); buildStudio(h); setStatus("Cargando…");
   try {
@@ -896,5 +923,7 @@ document.getElementById("banner-x").addEventListener("click", () => { document.g
 })();
 
 </script>
+<script src="vendor/vexflow-4.2.5.js"></script>
+<script src="partitura.js"></script>
 </body>
 </html>

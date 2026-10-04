@@ -1,7 +1,7 @@
 // Biblia Musical — funciona sin internet.
 // Al cambiar cualquier archivo de la app, sube VERSION para que el iPad reciba la actualización.
-const VERSION = "bm-v1";
-const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"];
+const VERSION = "bm-v2";
+const SHELL = ["./", "index.html", "partitura.js", "vendor/vexflow-4.2.5.js", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"];
 const FONTS = "bm-fonts";
 
 self.addEventListener("install", e => {
